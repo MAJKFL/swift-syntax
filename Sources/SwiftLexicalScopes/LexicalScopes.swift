@@ -38,7 +38,7 @@ public struct LexicalScopes {
   }
 
   /// Given name and syntax node position, return referenced declaration.
-  public static func lookupDeclarationFor(name: String, at syntax: SyntaxProtocol) -> Syntax? {
+  public static func lookupDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax? {
     guard let scope = syntax.scope else { return nil }
     return scope.getDeclarationFor(name: name, at: syntax)
   }

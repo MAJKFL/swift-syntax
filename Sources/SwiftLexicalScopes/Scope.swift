@@ -14,11 +14,30 @@ import Foundation
 import SwiftSyntax
 
 extension SyntaxProtocol {
+  var outermostScope: (any Scope)? {
+    outerScope ?? scope
+  }
+
+  private var outerScope: (any Scope)? {
+    switch self.syntaxNodeType {
+    case is FunctionDeclSyntax.Type:
+      FunctionDeclScope(sourceSyntax: self.as(FunctionDeclSyntax.self)!)
+    default:
+      nil
+    }
+  }
+
   /// Scope at the syntax node. Could be inherited from parent or introduced at the node.
-  var scope: Scope? {
+  var scope: (any Scope)? {
     switch self.syntaxNodeType {
     case is SourceFileSyntax.Type:
-      FileScope(syntax: self)
+      FileScope(sourceSyntax: self.as(SourceFileSyntax.self)!)
+    case is FunctionDeclSyntax.Type:
+      FunctionBodyScope(sourceSyntax: self.as(FunctionDeclSyntax.self)!)
+    case is FunctionParameterListSyntax.Type:
+      ParameterListScope(sourceSyntax: self.as(FunctionParameterListSyntax.self)!)
+    case is GenericParameterSyntax.Type:
+      GenericParameterScope(sourceSyntax: self.as(GenericParameterSyntax.self)!)
     default:
       parent?.scope
     }
@@ -26,19 +45,29 @@ extension SyntaxProtocol {
 }
 
 protocol Scope {
-  var parent: Scope? { get }
+  associatedtype SourceSyntaxType: SyntaxProtocol
+    
+  var parent: (any Scope)? { get }
 
-  var sourceSyntax: SyntaxProtocol { get }
+  var sourceSyntax: SourceSyntaxType { get }
+    
+  init(sourceSyntax: SourceSyntaxType)
 
-  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> Syntax?
+  var introducesToParent: [TokenSyntax] { get }
+
+  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax?
 }
 
 extension Scope {
-  var parent: Scope? {
+  var introducesToParent: [TokenSyntax] {
+    []
+  }
+
+  var parent: (any Scope)? {
     getParentScope(forSyntax: sourceSyntax)
   }
 
-  private func getParentScope(forSyntax syntax: SyntaxProtocol?) -> Scope? {
+  func getParentScope(forSyntax syntax: SyntaxProtocol?) -> (any Scope)? {
     if let lookedUpScope = syntax?.scope, lookedUpScope.sourceSyntax.id == syntax?.id {
       return getParentScope(forSyntax: sourceSyntax.parent)
     } else {

@@ -14,16 +14,126 @@ import Foundation
 import SwiftSyntax
 
 class FileScope: Scope {
-  var parent: Scope? = nil
+  var parent: (any Scope)? = nil
 
-  var sourceSyntax: SyntaxProtocol
+  var sourceSyntax: SourceFileSyntax
 
-  init(syntax: SyntaxProtocol) {
-    self.sourceSyntax = syntax
+  required init(sourceSyntax: SourceFileSyntax) {
+    self.sourceSyntax = sourceSyntax
   }
 
-  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> Syntax? {
+  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax? {
     // TODO: Implement the method
     return nil
+  }
+}
+
+class FunctionDeclScope: Scope {
+  var sourceSyntax: FunctionDeclSyntax
+
+  required init(sourceSyntax: FunctionDeclSyntax) {
+    self.sourceSyntax = sourceSyntax
+  }
+
+  var introducesToParent: [TokenSyntax] {
+    [sourceSyntax.name]
+  }
+
+  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax? {
+    if name == sourceSyntax.name.text {
+      sourceSyntax.name
+    } else {
+      parent?.getDeclarationFor(name: name, at: sourceSyntax)
+    }
+  }
+}
+
+class GenericParameterScope: Scope {
+  var parent: (any Scope)? {
+    guard let genericParameterList = sourceSyntax.parent?.as(GenericParameterListSyntax.self) else { return nil }
+
+    var leftSibling: GenericParameterSyntax?
+    for child in genericParameterList.children(viewMode: .sourceAccurate) {
+      guard let parameter = child.as(GenericParameterSyntax.self) else { continue }
+      if parameter.id == sourceSyntax.id {
+        break
+      }
+      leftSibling = parameter
+    }
+
+    if let leftSibling {
+      return leftSibling.scope
+    } else {
+      return genericParameterList.parent?.parent?.outermostScope
+    }
+  }
+
+  var sourceSyntax: GenericParameterSyntax
+
+  required init(sourceSyntax: GenericParameterSyntax) {
+    self.sourceSyntax = sourceSyntax
+  }
+
+  var introducedGenericName: TokenSyntax {
+    sourceSyntax.name
+  }
+
+  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax? {
+    if introducedGenericName.text == name {
+      introducedGenericName
+    } else {
+      parent?.getDeclarationFor(name: name, at: syntax)
+    }
+  }
+}
+
+class ParameterListScope: Scope {
+  var sourceSyntax: FunctionParameterListSyntax
+
+  required init(sourceSyntax: FunctionParameterListSyntax) {
+    self.sourceSyntax = sourceSyntax
+  }
+
+  var parameters: [TokenSyntax] {
+    sourceSyntax
+      .children(viewMode: .sourceAccurate)
+      .compactMap { syntax in
+        guard let parameter = syntax.as(FunctionParameterSyntax.self) else { return nil }
+        return parameter.secondName ?? parameter.firstName
+      }
+  }
+
+  var introducesToParent: [TokenSyntax] {
+    parameters
+  }
+
+  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax? {
+    if let token = parameters.first(where: { $0.text == name }) {
+      return token
+    } else {
+      return parent?.getDeclarationFor(name: name, at: syntax)
+    }
+  }
+}
+
+class FunctionBodyScope: Scope {
+  var parent: (any Scope)? {
+    sourceSyntax.genericParameterClause?.parameters.last?.scope ?? sourceSyntax.outermostScope
+  }
+
+  var sourceSyntax: FunctionDeclSyntax
+
+  required init(sourceSyntax: FunctionDeclSyntax) {
+    self.sourceSyntax = sourceSyntax
+  }
+
+  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax? {
+    if let token = sourceSyntax.signature.parameterClause.parameters.scope?.introducesToParent.first(where: {
+      $0.text == name
+    }) {
+      token
+    } else {
+      parent?.getDeclarationFor(name: name, at: syntax)
+    }
   }
 }
