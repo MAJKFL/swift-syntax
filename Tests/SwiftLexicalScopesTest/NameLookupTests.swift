@@ -40,13 +40,13 @@ final class NameLookupTests: XCTestCase {
   func testFunctionGenericParameterLookup() {
     assertLexicalNameLookup(
       source: """
-        func foo<1️⃣T1, 7️⃣T2: 5️⃣T1>(a: 2️⃣T1) {
+        func foo<1️⃣T1: 8️⃣T3, 7️⃣T2: 5️⃣T1, T3>(a: 2️⃣T1) {
           let x1: 3️⃣T1 = a
           let x2: 6️⃣T2 = a
-          let x: 4️⃣T = noType
+          let x: 4️⃣T = a
         }
         """,
-      references: ["2️⃣": "1️⃣", "3️⃣": "1️⃣", "4️⃣": nil, "5️⃣": "1️⃣", "6️⃣": "7️⃣"]
+      references: ["2️⃣": "1️⃣", "3️⃣": "1️⃣", "4️⃣": nil, "5️⃣": "1️⃣", "6️⃣": "7️⃣", "8️⃣":nil]
     )
   }
 }

@@ -13,7 +13,7 @@
 import Foundation
 import SwiftSyntax
 
-class FileScope: Scope {
+final class FileScope: Scope {
   var parent: (any Scope)? = nil
 
   var sourceSyntax: SourceFileSyntax
@@ -28,7 +28,7 @@ class FileScope: Scope {
   }
 }
 
-class FunctionDeclScope: Scope {
+final class FunctionDeclScope: Scope {
   var sourceSyntax: FunctionDeclSyntax
 
   required init(sourceSyntax: FunctionDeclSyntax) {
@@ -48,7 +48,7 @@ class FunctionDeclScope: Scope {
   }
 }
 
-class GenericParameterScope: Scope {
+final class GenericParameterScope: Scope {
   var parent: (any Scope)? {
     guard let genericParameterList = sourceSyntax.parent?.as(GenericParameterListSyntax.self) else { return nil }
 
@@ -87,7 +87,7 @@ class GenericParameterScope: Scope {
   }
 }
 
-class ParameterListScope: Scope {
+final class ParameterListScope: Scope {
   var sourceSyntax: FunctionParameterListSyntax
 
   required init(sourceSyntax: FunctionParameterListSyntax) {
@@ -116,7 +116,7 @@ class ParameterListScope: Scope {
   }
 }
 
-class FunctionBodyScope: Scope {
+final class FunctionBodyScope: Scope {
   var parent: (any Scope)? {
     sourceSyntax.genericParameterClause?.parameters.last?.scope ?? sourceSyntax.outermostScope
   }
