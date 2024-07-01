@@ -44,6 +44,7 @@ extension SyntaxProtocol {
   }
 }
 
+/// Provide common functionality for specialized scope implementatations.
 protocol Scope {
   associatedtype SourceSyntaxType: SyntaxProtocol
     
@@ -59,15 +60,8 @@ protocol Scope {
 }
 
 extension Scope {
-  var introducesToParent: [TokenSyntax] {
-    []
-  }
-
-  var parent: (any Scope)? {
-    getParentScope(forSyntax: sourceSyntax)
-  }
-
-  func getParentScope(forSyntax syntax: SyntaxProtocol?) -> (any Scope)? {
+  /// Recursively walks up syntax tree and finds the closest scope other than this scope.
+  func getParentScope(forSyntax syntax: SyntaxProtocol?) -> Scope? {
     if let lookedUpScope = syntax?.scope, lookedUpScope.sourceSyntax.id == syntax?.id {
       return getParentScope(forSyntax: sourceSyntax.parent)
     } else {
@@ -77,42 +71,35 @@ extension Scope {
 
   // MARK: - lookupLabeledStmts
 
+  /// Given syntax node position, returns all available labeled statements.
   func lookupLabeledStmts(at syntax: SyntaxProtocol) -> [LabeledStmtSyntax] {
-    var result = [LabeledStmtSyntax]()
-    lookupLabeledStmtsHelper(at: syntax.parent, accumulator: &result)
-    return result
+    return lookupLabeledStmtsHelper(at: syntax.parent)
   }
 
-  private func lookupLabeledStmtsHelper(at syntax: Syntax?, accumulator: inout [LabeledStmtSyntax]) {
-    guard let syntax, !syntax.is(MemberBlockSyntax.self) else { return }
+  /// Helper method to recursively collect labeled statements from the syntax node's parents.
+  private func lookupLabeledStmtsHelper(at syntax: Syntax?) -> [LabeledStmtSyntax] {
+    guard let syntax, !syntax.is(MemberBlockSyntax.self) else { return [] }
     if let labeledStmtSyntax = syntax.as(LabeledStmtSyntax.self) {
-      accumulator.append(labeledStmtSyntax)
-      lookupLabeledStmtsHelper(at: labeledStmtSyntax.parent, accumulator: &accumulator)
+      return [labeledStmtSyntax] + lookupLabeledStmtsHelper(at: labeledStmtSyntax.parent)
     } else {
-      lookupLabeledStmtsHelper(at: syntax.parent, accumulator: &accumulator)
+      return lookupLabeledStmtsHelper(at: syntax.parent)
     }
   }
 
   // MARK: - lookupFallthroughSourceAndDest
 
-  func lookupFallthroughSourceAndDest(at syntax: SyntaxProtocol) -> (SwitchCaseSyntax?, SwitchCaseSyntax?) {
-    guard let originalSwitchCase = lookupClosestSwitchCaseSyntaxAncestor(at: syntax) else { return (nil, nil) }
+  /// Given syntax node position, returns the current switch case and it's fallthrough destination.
+  func lookupFallthroughSourceAndDestination(at syntax: SyntaxProtocol) -> (SwitchCaseSyntax?, SwitchCaseSyntax?) {
+    guard let originalSwitchCase = syntax.ancestorOrSelf(mapping: { $0.as(SwitchCaseSyntax.self) }) else {
+      return (nil, nil)
+    }
 
     let nextSwitchCase = lookupNextSwitchCase(at: originalSwitchCase)
 
     return (originalSwitchCase, nextSwitchCase)
   }
 
-  private func lookupClosestSwitchCaseSyntaxAncestor(at syntax: SyntaxProtocol?) -> SwitchCaseSyntax? {
-    guard let syntax else { return nil }
-
-    if let switchCaseSyntax = syntax.as(SwitchCaseSyntax.self) {
-      return switchCaseSyntax
-    } else {
-      return lookupClosestSwitchCaseSyntaxAncestor(at: syntax.parent)
-    }
-  }
-
+  /// Given a switch case, returns the case that follows according to the parent.
   private func lookupNextSwitchCase(at switchCaseSyntax: SwitchCaseSyntax) -> SwitchCaseSyntax? {
     guard let switchCaseListSyntax = switchCaseSyntax.parent?.as(SwitchCaseListSyntax.self) else { return nil }
 
@@ -133,30 +120,32 @@ extension Scope {
 
   // MARK: - lookupCatchNode
 
+  /// Given syntax node position, returns the closest ancestor catch node.
   func lookupCatchNode(at syntax: Syntax) -> Syntax? {
     return lookupCatchNodeHelper(at: syntax, traversedCatchClause: false)
   }
 
+  /// Given syntax node location, finds where an error could be caught. If set to `true`, `traverseCatchClause`lookup will skip the next do statement.
   private func lookupCatchNodeHelper(at syntax: Syntax?, traversedCatchClause: Bool) -> Syntax? {
     guard let syntax else { return nil }
 
-    switch syntax.syntaxNodeType {
-    case is DoStmtSyntax.Type:
+    switch syntax.as(SyntaxEnum.self) {
+    case .doStmt:
       if traversedCatchClause {
         return lookupCatchNodeHelper(at: syntax.parent, traversedCatchClause: false)
       } else {
         return syntax
       }
-    case is CatchClauseSyntax.Type:
+    case .catchClause:
       return lookupCatchNodeHelper(at: syntax.parent, traversedCatchClause: true)
-    case is TryExprSyntax.Type:
-      if syntax.as(TryExprSyntax.self)!.questionOrExclamationMark != nil {
+    case .tryExpr(let tryExpr):
+      if tryExpr.questionOrExclamationMark != nil {
         return syntax
       } else {
         return lookupCatchNodeHelper(at: syntax.parent, traversedCatchClause: traversedCatchClause)
       }
-    case is FunctionDeclSyntax.Type:
-      if syntax.as(FunctionDeclSyntax.self)!.signature.effectSpecifiers?.throwsClause != nil {
+    case .functionDecl(let functionDecl):
+      if functionDecl.signature.effectSpecifiers?.throwsClause != nil {
         return syntax
       } else {
         return lookupCatchNodeHelper(at: syntax.parent, traversedCatchClause: traversedCatchClause)
