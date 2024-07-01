@@ -28,7 +28,8 @@ final class testSimpleQueries: XCTestCase {
         }
         """,
       methodUnderTest: { argument in
-        LexicalScopes.lookupLabeledStmts(at: argument)
+        guard let thisScope = argument.scope else { return [] }
+        return thisScope.lookupLabeledStmts(at: argument)
       },
       expected: ["3️⃣": ["2️⃣", "1️⃣"], "4️⃣": ["1️⃣"]]
     )
@@ -42,7 +43,8 @@ final class testSimpleQueries: XCTestCase {
         }
         """,
       methodUnderTest: { argument in
-        LexicalScopes.lookupLabeledStmts(at: argument)
+        guard let thisScope = argument.scope else { return [] }
+        return thisScope.lookupLabeledStmts(at: argument)
       },
       expected: ["1️⃣": []]
     )
@@ -63,7 +65,8 @@ final class testSimpleQueries: XCTestCase {
         }
         """,
       methodUnderTest: { argument in
-        LexicalScopes.lookupLabeledStmts(at: argument)
+        guard let thisScope = argument.scope else { return [] }
+        return thisScope.lookupLabeledStmts(at: argument)
       },
       expected: ["3️⃣": ["2️⃣"], "4️⃣": ["1️⃣"]]
     )
@@ -86,7 +89,8 @@ final class testSimpleQueries: XCTestCase {
         }
         """,
       methodUnderTest: { argument in
-        let result = LexicalScopes.lookupFallthroughSourceAndDest(at: argument)
+        guard let thisScope = argument.scope else { return [] }
+        let result = thisScope.lookupFallthroughSourceAndDestination(at: argument)
         return [result.source, result.destination]
       },
       expected: ["2️⃣": ["1️⃣", "3️⃣"], "4️⃣": ["3️⃣", "5️⃣"], "6️⃣": ["5️⃣", nil], "7️⃣": [nil, nil]]
@@ -110,7 +114,8 @@ final class testSimpleQueries: XCTestCase {
         }
         """,
       methodUnderTest: { argument in
-        [LexicalScopes.lookupCatchNode(at: argument)]
+        guard let thisScope = argument.scope else { return [] }
+        return [thisScope.lookupCatchNode(at: argument)]
       },
       expected: ["3️⃣": ["2️⃣"], "5️⃣": ["4️⃣"], "6️⃣": ["1️⃣"], "7️⃣": [nil]]
     )
@@ -133,7 +138,8 @@ final class testSimpleQueries: XCTestCase {
         }
         """,
       methodUnderTest: { argument in
-        [LexicalScopes.lookupCatchNode(at: argument)]
+        guard let thisScope = argument.scope else { return [] }
+        return [thisScope.lookupCatchNode(at: argument)]
       },
       expected: ["4️⃣": ["3️⃣"], "5️⃣": ["2️⃣"], "7️⃣": ["6️⃣"], "8️⃣": ["1️⃣"]]
     )

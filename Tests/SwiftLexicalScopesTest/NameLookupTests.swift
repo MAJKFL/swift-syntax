@@ -1,9 +1,14 @@
+//===----------------------------------------------------------------------===//
 //
-//  File.swift
+// This source file is part of the Swift.org open source project
 //
+// Copyright (c) 2014 - 2024 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
 //
-//  Created by Jakub Florek on 23/06/2024.
+// See https://swift.org/LICENSE.txt for license information
+// See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 //
+//===----------------------------------------------------------------------===//
 
 import Foundation
 import XCTest
@@ -25,15 +30,16 @@ final class NameLookupTests: XCTestCase {
   func testFunctionParameterShadowingLookup() {
     assertLexicalNameLookup(
       source: """
-        func foo(a: Int, 1️⃣b: Int) {
+        func 8️⃣foo(a: Int, 1️⃣b: Int) {
             func 6️⃣bar(2️⃣a: Int) {
               let x1 = 3️⃣a
               let x2 = 4️⃣b
               5️⃣bar()
+              7️⃣foo()
             }
         }
         """,
-      references: ["3️⃣": "2️⃣", "4️⃣": "1️⃣", "5️⃣": "6️⃣"]
+      references: ["3️⃣": "2️⃣", "4️⃣": "1️⃣", "5️⃣": "6️⃣", "7️⃣": "8️⃣"]
     )
   }
 

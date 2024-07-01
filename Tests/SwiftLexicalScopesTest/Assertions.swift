@@ -98,7 +98,13 @@ func assertLexicalNameLookup(
         XCTFail("Couldn't find a token at \(argument)")
         return []
       }
-      return [LexicalScopes.lookupDeclarationFor(name: name, at: argument)]
+      
+      guard let scope = argument.scope else {
+        XCTFail("Couldn't find a scope at \(argument)")
+        return []
+      }
+      
+      return [scope.lookup(name)]
     },
     expected: references.mapValues({ [$0] })
   )

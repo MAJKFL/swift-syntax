@@ -13,66 +13,11 @@
 import Foundation
 import SwiftSyntax
 
-extension SyntaxProtocol {
-  var outermostScope: (any Scope)? {
-    outerScope ?? scope
-  }
-
-  private var outerScope: (any Scope)? {
-    switch self.syntaxNodeType {
-    case is FunctionDeclSyntax.Type:
-      FunctionDeclScope(sourceSyntax: self.as(FunctionDeclSyntax.self)!)
-    default:
-      nil
-    }
-  }
-
-  /// Scope at the syntax node. Could be inherited from parent or introduced at the node.
-  var scope: (any Scope)? {
-    switch self.syntaxNodeType {
-    case is SourceFileSyntax.Type:
-      FileScope(sourceSyntax: self.as(SourceFileSyntax.self)!)
-    case is FunctionDeclSyntax.Type:
-      FunctionBodyScope(sourceSyntax: self.as(FunctionDeclSyntax.self)!)
-    case is FunctionParameterListSyntax.Type:
-      ParameterListScope(sourceSyntax: self.as(FunctionParameterListSyntax.self)!)
-    case is GenericParameterSyntax.Type:
-      GenericParameterScope(sourceSyntax: self.as(GenericParameterSyntax.self)!)
-    default:
-      parent?.scope
-    }
-  }
-}
-
-/// Provide common functionality for specialized scope implementatations.
-protocol Scope {
-  associatedtype SourceSyntaxType: SyntaxProtocol
-    
-  var parent: (any Scope)? { get }
-
-  var sourceSyntax: SourceSyntaxType { get }
-    
-  init(sourceSyntax: SourceSyntaxType)
-
-  var introducesToParent: [TokenSyntax] { get }
-
-  func getDeclarationFor(name: String, at syntax: SyntaxProtocol) -> TokenSyntax?
-}
-
-extension Scope {
-  /// Recursively walks up syntax tree and finds the closest scope other than this scope.
-  func getParentScope(forSyntax syntax: SyntaxProtocol?) -> Scope? {
-    if let lookedUpScope = syntax?.scope, lookedUpScope.sourceSyntax.id == syntax?.id {
-      return getParentScope(forSyntax: sourceSyntax.parent)
-    } else {
-      return syntax?.scope
-    }
-  }
-
+extension ScopeSyntax {
   // MARK: - lookupLabeledStmts
 
   /// Given syntax node position, returns all available labeled statements.
-  func lookupLabeledStmts(at syntax: SyntaxProtocol) -> [LabeledStmtSyntax] {
+  public func lookupLabeledStmts(at syntax: SyntaxProtocol) -> [LabeledStmtSyntax] {
     return lookupLabeledStmtsHelper(at: syntax.parent)
   }
 
@@ -89,7 +34,7 @@ extension Scope {
   // MARK: - lookupFallthroughSourceAndDest
 
   /// Given syntax node position, returns the current switch case and it's fallthrough destination.
-  func lookupFallthroughSourceAndDestination(at syntax: SyntaxProtocol) -> (SwitchCaseSyntax?, SwitchCaseSyntax?) {
+  public func lookupFallthroughSourceAndDestination(at syntax: SyntaxProtocol) -> (source: SwitchCaseSyntax?, destination: SwitchCaseSyntax?) {
     guard let originalSwitchCase = syntax.ancestorOrSelf(mapping: { $0.as(SwitchCaseSyntax.self) }) else {
       return (nil, nil)
     }
@@ -121,8 +66,8 @@ extension Scope {
   // MARK: - lookupCatchNode
 
   /// Given syntax node position, returns the closest ancestor catch node.
-  func lookupCatchNode(at syntax: Syntax) -> Syntax? {
-    return lookupCatchNodeHelper(at: syntax, traversedCatchClause: false)
+  public func lookupCatchNode(at syntax: SyntaxProtocol) -> Syntax? {
+    return lookupCatchNodeHelper(at: Syntax(syntax), traversedCatchClause: false)
   }
 
   /// Given syntax node location, finds where an error could be caught. If set to `true`, `traverseCatchClause`lookup will skip the next do statement.
