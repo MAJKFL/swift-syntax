@@ -19,19 +19,32 @@ extension SyntaxProtocol {
 }
 
 public protocol ScopeSyntax: SyntaxProtocol {
-  var parentScope: (ScopeSyntax)? { get }
+  var parentScope: ScopeSyntax? { get }
   var introducedNames: [LookupName] { get }
   func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName]
 }
 
 extension ScopeSyntax {
+  public var parentScope: ScopeSyntax? {
+    getParent(for: self.parent)
+  }
+  
   func getParent(for syntax: Syntax?) -> ScopeSyntax? {
-      guard let syntax else { return nil }
-      
-      if let lookedUpScope = syntax.scope, lookedUpScope.id != self.id {
-        return lookedUpScope
-      } else {
-        return getParent(for: syntax.parent)
-      }
+    guard let syntax else { return nil }
+    
+    if let lookedUpScope = syntax.scope, lookedUpScope.id != self.id {
+      return lookedUpScope
+    } else {
+      return getParent(for: syntax.parent)
     }
+  }
+  
+  func defaultLookupImplementation(for name: String, 
+                                   at syntax: SyntaxProtocol,
+                                   positionSensitive: Bool) -> [LookupName] {
+    introducedNames
+      .filter { introducedName in
+        (!positionSensitive || introducedName.isBefore(syntax)) && introducedName.refersTo(name)
+      } + (parentScope?.lookup(for: name, at: syntax) ?? [])
+  }
 }

@@ -14,6 +14,8 @@ extension SyntaxProtocol {
       sourceFile
     case .codeBlock(let codeBlock):
       codeBlock
+    case .forStmt(let forStmt):
+      forStmt
     default:
       self.parent?.scope
     }
@@ -21,7 +23,7 @@ extension SyntaxProtocol {
 }
 
 extension SourceFileSyntax: ScopeSyntax {
-  public var parentScope: (ScopeSyntax)? {
+  public var parentScope: ScopeSyntax? {
     nil
   }
   
@@ -34,21 +36,24 @@ extension SourceFileSyntax: ScopeSyntax {
   }
 }
 
-extension CodeBlockSyntax: ScopeSyntax {
-  public var parentScope: (ScopeSyntax)? {
-    getParent(for: self.parent)
-  }
-  
+extension CodeBlockSyntax: ScopeSyntax {  
   public var introducedNames: [LookupName] {
-    self.statements.flatMap { codeBlockItem in
+    statements.flatMap { codeBlockItem in
       LookupName.getNames(from: codeBlockItem.item)
     }
   }
   
   public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
-    introducedNames
-      .filter { introducedName in
-        introducedName.isBefore(syntax) && introducedName.refersTo(name)
-      } + (parentScope?.lookup(for: name, at: syntax) ?? [])
+    defaultLookupImplementation(for: name, at: syntax, positionSensitive: true)
+  }
+}
+
+extension ForStmtSyntax: ScopeSyntax {
+  public var introducedNames: [LookupName] {
+    LookupName.getNames(from: pattern)
+  }
+  
+  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+    defaultLookupImplementation(for: name, at: syntax, positionSensitive: false)
   }
 }

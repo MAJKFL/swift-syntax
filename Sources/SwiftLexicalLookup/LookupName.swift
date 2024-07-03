@@ -30,41 +30,41 @@ public enum LookupName {
   }
   
   func isBefore(_ lookedUpSyntax: SyntaxProtocol) -> Bool {
-    return syntax.position < lookedUpSyntax.position
+    syntax.position < lookedUpSyntax.position
   }
   
   func refersTo(_ lookedUpName: String) -> Bool {
-    return name == lookedUpName
+    name == lookedUpName
   }
   
   static func getNames(from syntax: SyntaxProtocol) -> [LookupName] {
     switch Syntax(syntax).as(SyntaxEnum.self) {
     case .variableDecl(let variableDecl):
       variableDecl.bindings.flatMap { binding in
-        if let identifierPattern = IdentifierPatternSyntax(binding.pattern) {
-          return handle(identifierPattern: identifierPattern)
-        } else if let tuplePattern = TuplePatternSyntax(binding.pattern) {
-          return handle(tuplePattern: tuplePattern)
-        } else {
-          return []
-        }
+        getNames(from: binding.pattern)
       }
+    case .tuplePattern(let tuplePattern):
+      tuplePattern.elements.flatMap { tupleElement in
+        getNames(from: tupleElement.pattern)
+      }
+    case .valueBindingPattern(let valueBindingPattern):
+      getNames(from: valueBindingPattern.pattern)
+    case .expressionPattern(let expressionPattern):
+      getNames(from: expressionPattern.expression)
+    case .sequenceExpr(let sequenceExpr):
+      sequenceExpr.elements.flatMap { expression in
+        getNames(from: expression)
+      }
+    case .patternExpr(let patternExpr):
+      getNames(from: patternExpr.pattern)
+    case .identifierPattern(let identifierPattern):
+      handle(identifierPattern: identifierPattern)
     default:
       []
     }
   }
   
   private static func handle(identifierPattern: IdentifierPatternSyntax) -> [LookupName] {
-    return [LookupName.identifier(identifierPattern.identifier.text, identifierPattern)]
-  }
-  
-  private static func handle(tuplePattern: TuplePatternSyntax) -> [LookupName] {
-    return tuplePattern.elements.compactMap { tupleElement in
-      if let identifierPattern = IdentifierPatternSyntax(tupleElement.pattern) {
-        return LookupName.identifier(identifierPattern.identifier.text, identifierPattern)
-      } else {
-        return nil
-      }
-    }
+    [.identifier(identifierPattern.identifier.text, identifierPattern)]
   }
 }

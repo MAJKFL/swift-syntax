@@ -39,4 +39,23 @@ final class testNameLookup: XCTestCase {
     }
     """, references: ["5️⃣" : ["1️⃣"], "6️⃣": ["2️⃣"], "7️⃣": ["3️⃣"], "8️⃣": ["4️⃣"]])
   }
+  
+  func testLookupForLoop() {
+    assertLexicalNameLookup(source: """
+    for 1️⃣i in 1..<4 {
+      let (a, b) = (2️⃣i, 3️⃣j)
+      for (4️⃣i, 5️⃣j) in foo {
+        let (c, d) = (6️⃣i, 7️⃣j)
+      }
+    }
+    """, references: ["2️⃣" : ["1️⃣"], "3️⃣": [], "6️⃣": ["4️⃣", "1️⃣"], "7️⃣": ["5️⃣"]])
+  }
+  
+  func testLookupForCaseLetLoop() {
+    assertLexicalNameLookup(source: """
+    for case let 1️⃣a as T in arr {
+      2️⃣a.foo()
+    }
+    """, references: ["2️⃣" : ["1️⃣"]])
+  }
 }
