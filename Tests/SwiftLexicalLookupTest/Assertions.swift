@@ -81,3 +81,27 @@ func assertLexicalScopeQuery(
     }
   }
 }
+
+/// Parse `source` and check if the lexical name lookup matches results passed as `expected`.
+///
+/// - Parameters:
+///   - expected: A dictionary of markers with reference location as keys and expected declaration as values.
+func assertLexicalNameLookup(
+  source: String,
+  references: [String: [String]]
+) {
+  assertLexicalScopeQuery(
+    source: source,
+    methodUnderTest: { argument in
+      // Extract reference name and use it for lookup
+      guard let name = argument.firstToken(viewMode: .sourceAccurate)?.text else {
+        XCTFail("Couldn't find a token at \(argument)")
+        return []
+      }
+      return argument.lookup(for: name).map { lookUpResult in
+        lookUpResult.syntax
+      }
+    },
+    expected: references
+  )
+}
