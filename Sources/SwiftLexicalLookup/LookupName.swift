@@ -1,16 +1,21 @@
+//===----------------------------------------------------------------------===//
 //
-//  File.swift
-//  
+// This source file is part of the Swift.org open source project
 //
-//  Created by Jakub Florek on 03/07/2024.
+// Copyright (c) 2014 - 2024 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
 //
+// See https://swift.org/LICENSE.txt for license information
+// See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
+//
+//===----------------------------------------------------------------------===//
 
 import SwiftSyntax
 
 public enum LookupName {
   case identifier(String, SyntaxProtocol)
   case constructName(String, SyntaxProtocol)
-  
+
   public var syntax: SyntaxProtocol {
     switch self {
     case .identifier(_, let syntax):
@@ -19,7 +24,7 @@ public enum LookupName {
       syntax
     }
   }
-  
+
   public var name: String {
     switch self {
     case .identifier(let name, _):
@@ -28,15 +33,15 @@ public enum LookupName {
       name
     }
   }
-  
+
   func isBefore(_ lookedUpSyntax: SyntaxProtocol) -> Bool {
     syntax.position < lookedUpSyntax.position
   }
-  
+
   func refersTo(_ lookedUpName: String) -> Bool {
     name == lookedUpName
   }
-  
+
   static func getNames(from syntax: SyntaxProtocol) -> [LookupName] {
     switch Syntax(syntax).as(SyntaxEnum.self) {
     case .variableDecl(let variableDecl):
@@ -59,12 +64,29 @@ public enum LookupName {
       getNames(from: patternExpr.pattern)
     case .identifierPattern(let identifierPattern):
       handle(identifierPattern: identifierPattern)
+    case .closureShorthandParameter(let closureShorthandParameter):
+      handle(closureShorthandParameter: closureShorthandParameter)
+    case .closureParameter(let closureParameter):
+      handle(closureParameter: closureParameter)
     default:
       []
     }
   }
-  
+
   private static func handle(identifierPattern: IdentifierPatternSyntax) -> [LookupName] {
     [.identifier(identifierPattern.identifier.text, identifierPattern)]
+  }
+
+  private static func handle(closureParameter: ClosureParameterSyntax) -> [LookupName] {
+    [.identifier(closureParameter.secondName?.text ?? closureParameter.firstName.text, closureParameter)]
+  }
+
+  private static func handle(closureShorthandParameter: ClosureShorthandParameterSyntax) -> [LookupName] {
+    let name = closureShorthandParameter.name.text
+    if name != "_" {
+      return [.identifier(name, closureShorthandParameter)]
+    } else {
+      return []
+    }
   }
 }

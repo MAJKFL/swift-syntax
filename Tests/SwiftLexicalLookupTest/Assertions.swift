@@ -17,6 +17,34 @@ import SwiftSyntax
 import XCTest
 import _SwiftSyntaxTestSupport
 
+enum MarkerExpectation {
+  case custom([String: SyntaxProtocol.Type])
+  case all(SyntaxProtocol.Type, except: [String: SyntaxProtocol.Type] = [:])
+  case none
+
+  fileprivate func assertMarkerType(marker: String, actual: SyntaxProtocol) {
+    switch self {
+    case .all(let expectedType, except: let dictionary):
+      assertMarkerType(marker: marker, actual: actual, expectedType: dictionary[marker] ?? expectedType)
+    case .custom(let dictionary):
+      if let expectedType = dictionary[marker] {
+        assertMarkerType(marker: marker, actual: actual, expectedType: expectedType)
+      } else {
+        XCTFail("For result \(marker), could not find type expectation")
+      }
+    case .none:
+      break
+    }
+  }
+
+  private func assertMarkerType(marker: String, actual: SyntaxProtocol, expectedType: SyntaxProtocol.Type) {
+    XCTAssert(
+      actual.is(expectedType),
+      "For result \(marker), expected type \(expectedType) doesn't match the actual type \(actual.syntaxNodeType)"
+    )
+  }
+}
+
 /// Parse `source` and check if the method passed as `methodUnderTest` produces the same results as indicated in `expected`.
 ///
 /// The `methodUnderTest` provides test inputs taken from the `expected` dictionary. The closure should return result produced by the tested method as an array with the same ordering.
@@ -27,7 +55,8 @@ import _SwiftSyntaxTestSupport
 func assertLexicalScopeQuery(
   source: String,
   methodUnderTest: (SyntaxProtocol) -> ([SyntaxProtocol?]),
-  expected: [String: [String?]]
+  expected: [String: [String?]],
+  expectedResultTypes: MarkerExpectation = .none
 ) {
   // Extract markers
   let (markerDict, textWithoutMarkers) = extractMarkers(source)
@@ -71,13 +100,27 @@ func assertLexicalScopeQuery(
     }
 
     // Assert validity of the output
-    for (actual, expected) in zip(result, expectedValues) {
-      if actual == nil && expected == nil { continue }
+    for (actual, expected) in zip(result, zip(expectedMarkers, expectedValues)) {
+      if actual == nil && expected.1 == nil { continue }
+
+      guard let actual else {
+        XCTFail("For marker \(marker), actual is nil while expected is \(expected.1!)")
+        continue
+      }
+
+      guard let expectedValue = expected.1 else {
+        XCTFail("For marker \(marker), actual is \(actual) while expected is nil")
+        continue
+      }
 
       XCTAssert(
-        actual?.firstToken(viewMode: .sourceAccurate)?.id == expected?.id,
-        "For marker \(marker), actual result: \(actual?.firstToken(viewMode: .sourceAccurate) ?? "nil") doesn't match expected value: \(expected?.firstToken(viewMode: .sourceAccurate) ?? "nil")"
+        actual.tokens(viewMode: .sourceAccurate).contains { $0.id == expectedValue.id },
+        "For marker \(marker), actual result: \(actual) doesn't match expected value: \(expected)"
       )
+
+      if let expectedMarker = expected.0 {
+        expectedResultTypes.assertMarkerType(marker: expectedMarker, actual: actual)
+      }
     }
   }
 }
@@ -85,10 +128,11 @@ func assertLexicalScopeQuery(
 /// Parse `source` and check if the lexical name lookup matches results passed as `expected`.
 ///
 /// - Parameters:
-///   - expected: A dictionary of markers with reference location as keys and expected declaration as values.
+///   - expected: A dictionary of markers with reference location as keys and expected declarations as values.
 func assertLexicalNameLookup(
   source: String,
-  references: [String: [String]]
+  references: [String: [String]],
+  expectedResultTypes: MarkerExpectation = .none
 ) {
   assertLexicalScopeQuery(
     source: source,
@@ -102,6 +146,7 @@ func assertLexicalNameLookup(
         lookUpResult.syntax
       }
     },
-    expected: references
+    expected: references,
+    expectedResultTypes: expectedResultTypes
   )
 }

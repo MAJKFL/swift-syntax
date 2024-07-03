@@ -1,61 +1,129 @@
+//===----------------------------------------------------------------------===//
 //
-//  File.swift
-//  
+// This source file is part of the Swift.org open source project
 //
-//  Created by Jakub Florek on 03/07/2024.
+// Copyright (c) 2014 - 2024 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
 //
+// See https://swift.org/LICENSE.txt for license information
+// See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
+//
+//===----------------------------------------------------------------------===//
 
 import Foundation
 @_spi(Testing) import SwiftLexicalLookup
+import SwiftSyntax
 import XCTest
 
 final class testNameLookup: XCTestCase {
   func testCodeBlockSimpleCase() {
-    assertLexicalNameLookup(source: """
-    for i in 1..<4 {
-      let 1️⃣a = i
-      let 2️⃣b = 3️⃣a
-    
-      for j in 1..<4 {
-        let 4️⃣c = 5️⃣a
-        let 6️⃣a = j
-    
-        let d = 7️⃣a + 8️⃣b + 9️⃣c
-      }
-    }
-    """, references: ["3️⃣" : ["1️⃣"], "5️⃣": ["1️⃣"], "7️⃣": ["6️⃣", "1️⃣"], "8️⃣": ["2️⃣"], "9️⃣": ["4️⃣"]])
+    assertLexicalNameLookup(
+      source: """
+        for i in 1..<4 {
+          let 1️⃣a = i
+          let 2️⃣b = 3️⃣a
+
+          for j in 1..<4 {
+            let 4️⃣c = 5️⃣a
+            let 6️⃣a = j
+
+            let d = 7️⃣a + 8️⃣b + 9️⃣c
+          }
+        }
+        """,
+      references: ["3️⃣": ["1️⃣"], "5️⃣": ["1️⃣"], "7️⃣": ["6️⃣", "1️⃣"], "8️⃣": ["2️⃣"], "9️⃣": ["4️⃣"]],
+      expectedResultTypes: .all(IdentifierPatternSyntax.self)
+    )
   }
-  
+
   func testLookupForComplexDeclarationsInCodeBlock() {
-    assertLexicalNameLookup(source: """
-    for i in 1..<4 {
-      let (1️⃣a, 2️⃣b) = (1, 2)
-      let 3️⃣c = 3, 4️⃣d = 4
-    
-      5️⃣a
-      6️⃣b
-      7️⃣c
-      8️⃣d
-    }
-    """, references: ["5️⃣" : ["1️⃣"], "6️⃣": ["2️⃣"], "7️⃣": ["3️⃣"], "8️⃣": ["4️⃣"]])
+    assertLexicalNameLookup(
+      source: """
+        for i in 1..<4 {
+          let (1️⃣a, 2️⃣b) = (1, 2)
+          let 3️⃣c = 3, 4️⃣d = 4
+
+          5️⃣a
+          6️⃣b
+          7️⃣c
+          8️⃣d
+        }
+        """,
+      references: ["5️⃣": ["1️⃣"], "6️⃣": ["2️⃣"], "7️⃣": ["3️⃣"], "8️⃣": ["4️⃣"]],
+      expectedResultTypes: .all(IdentifierPatternSyntax.self)
+    )
   }
-  
+
   func testLookupForLoop() {
-    assertLexicalNameLookup(source: """
-    for 1️⃣i in 1..<4 {
-      let (a, b) = (2️⃣i, 3️⃣j)
-      for (4️⃣i, 5️⃣j) in foo {
-        let (c, d) = (6️⃣i, 7️⃣j)
-      }
-    }
-    """, references: ["2️⃣" : ["1️⃣"], "3️⃣": [], "6️⃣": ["4️⃣", "1️⃣"], "7️⃣": ["5️⃣"]])
+    assertLexicalNameLookup(
+      source: """
+        for 1️⃣i in 1..<4 {
+          let (a, b) = (2️⃣i, 3️⃣j)
+          for (4️⃣i, 5️⃣j) in foo {
+            let (c, d) = (6️⃣i, 7️⃣j)
+          }
+        }
+        """,
+      references: ["2️⃣": ["1️⃣"], "3️⃣": [], "6️⃣": ["4️⃣", "1️⃣"], "7️⃣": ["5️⃣"]],
+      expectedResultTypes: .all(IdentifierPatternSyntax.self)
+    )
   }
-  
+
   func testLookupForCaseLetLoop() {
-    assertLexicalNameLookup(source: """
-    for case let 1️⃣a as T in arr {
-      2️⃣a.foo()
-    }
-    """, references: ["2️⃣" : ["1️⃣"]])
+    assertLexicalNameLookup(
+      source: """
+        for case let 1️⃣a as T in arr {
+          2️⃣a.foo()
+        }
+        """,
+      references: ["2️⃣": ["1️⃣"]],
+      expectedResultTypes: .all(IdentifierPatternSyntax.self)
+    )
+  }
+
+  func testShorthandParameterLookupClosure() {
+    assertLexicalNameLookup(
+      source: """
+        func foo() {
+          let 1️⃣a = 1
+          let 2️⃣b = 2
+          let 3️⃣x: (Int, Int, Int) = { 4️⃣a, _, 5️⃣c in
+            print(6️⃣a, 7️⃣b, 8️⃣c, 0️⃣$0)
+          }
+          9️⃣x()
+        }
+        """,
+      references: ["6️⃣": ["4️⃣", "1️⃣"], "7️⃣": ["2️⃣"], "8️⃣": ["5️⃣"], "9️⃣": ["3️⃣"], "0️⃣": []],
+      expectedResultTypes: .all(
+        IdentifierPatternSyntax.self,
+        except: [
+          "4️⃣": ClosureShorthandParameterSyntax.self,
+          "5️⃣": ClosureShorthandParameterSyntax.self,
+        ]
+      )
+    )
+  }
+
+  func testParameterLookupClosure() {
+    assertLexicalNameLookup(
+      source: """
+        func foo() {
+          let 1️⃣a = 1
+          let 2️⃣b = 2
+          let 3️⃣x = { (a 4️⃣b: Int, 5️⃣c: Int) in
+              print(6️⃣a, 7️⃣b, 8️⃣c, 0️⃣$0)
+          }
+          9️⃣x()
+        }
+        """,
+      references: ["6️⃣": ["1️⃣"], "7️⃣": ["4️⃣", "2️⃣"], "8️⃣": ["5️⃣"], "9️⃣": ["3️⃣"], "0️⃣": []],
+      expectedResultTypes: .all(
+        IdentifierPatternSyntax.self,
+        except: [
+          "4️⃣": ClosureParameterSyntax.self,
+          "5️⃣": ClosureParameterSyntax.self,
+        ]
+      )
+    )
   }
 }
