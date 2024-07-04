@@ -62,6 +62,8 @@ public enum LookupName {
       }
     case .patternExpr(let patternExpr):
       getNames(from: patternExpr.pattern)
+    case .optionalBindingCondition(let optionalBinding):
+      getNames(from: optionalBinding.pattern)
     case .identifierPattern(let identifierPattern):
       handle(identifierPattern: identifierPattern)
     case .closureShorthandParameter(let closureShorthandParameter):

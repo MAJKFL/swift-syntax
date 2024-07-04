@@ -42,7 +42,7 @@ extension ScopeSyntax {
   func defaultLookupImplementation(
     for name: String,
     at syntax: SyntaxProtocol,
-    positionSensitive: Bool
+    positionSensitive: Bool = false
   ) -> [LookupName] {
     introducedNames
       .filter { introducedName in

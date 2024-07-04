@@ -126,4 +126,22 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
+  
+  func testWhileOptionalBindingLookup() {
+    assertLexicalNameLookup(
+      source: """
+        func foo() {
+          let 1️⃣b = x
+          while let 2️⃣a = 3️⃣b {
+            let 4️⃣b = x
+            print(5️⃣a, 6️⃣b)
+          }
+        }
+        """,
+      references: ["3️⃣": ["1️⃣"], "5️⃣":["2️⃣"], "6️⃣":["4️⃣", "1️⃣"]],
+      expectedResultTypes: .all(
+        IdentifierPatternSyntax.self
+      )
+    )
+  }
 }

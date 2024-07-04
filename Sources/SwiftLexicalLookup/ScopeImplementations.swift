@@ -23,6 +23,8 @@ extension SyntaxProtocol {
       forStmt
     case .closureExpr(let closureExpr):
       closureExpr
+    case .whileStmt(let whileStmt):
+      whileStmt
     default:
       self.parent?.scope
     }
@@ -61,7 +63,7 @@ extension ForStmtSyntax: ScopeSyntax {
   }
 
   public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
-    defaultLookupImplementation(for: name, at: syntax, positionSensitive: false)
+    defaultLookupImplementation(for: name, at: syntax)
   }
 }
 
@@ -79,6 +81,18 @@ extension ClosureExprSyntax: ScopeSyntax {
   }
 
   public func lookup(for name: String, at syntax: SwiftSyntax.SyntaxProtocol) -> [LookupName] {
-    defaultLookupImplementation(for: name, at: syntax, positionSensitive: false)
+    defaultLookupImplementation(for: name, at: syntax)
+  }
+}
+
+extension WhileStmtSyntax: ScopeSyntax {
+  public var introducedNames: [LookupName] {
+    conditions.flatMap { element in
+      LookupName.getNames(from: element.condition)
+    }
+  }
+  
+  public func lookup(for name: String, at syntax: SwiftSyntax.SyntaxProtocol) -> [LookupName] {
+    defaultLookupImplementation(for: name, at: syntax)
   }
 }
