@@ -144,4 +144,45 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
+  
+  func testIfLetOptionalBindingSimpleCaseWithPrecedence() {
+    assertLexicalNameLookup(
+      source: """
+        if let 1️⃣a = 2️⃣b, let 3️⃣b = 4️⃣a {
+          print(5️⃣a, 6️⃣b)
+        } else {
+          print(7️⃣a, 8️⃣b)
+        }
+        """,
+      references: ["2️⃣": [], "4️⃣":["1️⃣"], "5️⃣":["1️⃣"], "6️⃣":["3️⃣"], "7️⃣":[], "8️⃣":[]],
+      expectedResultTypes: .all(
+        IdentifierPatternSyntax.self
+      )
+    )
+  }
+  
+  func testIfLetWithElseIfAndNesting() {
+    assertLexicalNameLookup(
+      source: """
+        if let 1️⃣a = x {
+          if let 2️⃣a = x {
+            print(3️⃣a)
+          } else if let 4️⃣a = x {
+            print(5️⃣a)
+          } else {
+            print(6️⃣a)
+          }
+          print(7️⃣a)
+        } else if let 8️⃣a = x {
+          print(9️⃣a)
+        } else {
+          print(0️⃣a)
+        }
+        """,
+      references: ["3️⃣": ["2️⃣", "1️⃣"], "5️⃣":["4️⃣", "1️⃣"], "6️⃣":["1️⃣"], "7️⃣":["1️⃣"], "9️⃣":["8️⃣"], "0️⃣":[]],
+      expectedResultTypes: .all(
+        IdentifierPatternSyntax.self
+      )
+    )
+  }
 }

@@ -25,6 +25,8 @@ extension SyntaxProtocol {
       closureExpr
     case .whileStmt(let whileStmt):
       whileStmt
+    case .ifExpr(let ifExpr):
+      ifExpr
     default:
       self.parent?.scope
     }
@@ -80,7 +82,7 @@ extension ClosureExprSyntax: ScopeSyntax {
     } ?? []
   }
 
-  public func lookup(for name: String, at syntax: SwiftSyntax.SyntaxProtocol) -> [LookupName] {
+  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
   }
 }
@@ -92,7 +94,41 @@ extension WhileStmtSyntax: ScopeSyntax {
     }
   }
   
-  public func lookup(for name: String, at syntax: SwiftSyntax.SyntaxProtocol) -> [LookupName] {
+  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
+  }
+}
+
+extension IfExprSyntax: ScopeSyntax {
+  public var parentScope: ScopeSyntax? {
+    getParent(for: self.parent, previousIfExpr: self)
+  }
+  
+  private func getParent(for syntax: Syntax?, previousIfExpr: IfExprSyntax) -> ScopeSyntax? {
+    guard let syntax else { return nil }
+
+    if let lookedUpScope = syntax.scope, lookedUpScope.id != self.id {
+      if let currentIfExpr = lookedUpScope.as(IfExprSyntax.self), previousIfExpr.elseKeyword != nil {
+        return getParent(for: syntax.parent, previousIfExpr: currentIfExpr)
+      } else {
+        return lookedUpScope
+      }
+    } else {
+      return getParent(for: syntax.parent, previousIfExpr: previousIfExpr)
+    }
+  }
+  
+  public var introducedNames: [LookupName] {
+    conditions.flatMap { element in
+      LookupName.getNames(from: element.condition)
+    }
+  }
+  
+  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+    if let elseBody, elseBody.position <= syntax.position, elseBody.endPosition >= syntax.position {
+      parentScope?.lookup(for: name, at: syntax) ?? []
+    } else {
+      defaultLookupImplementation(for: name, at: syntax, positionSensitive: true)
+    }
   }
 }
