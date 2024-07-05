@@ -116,6 +116,13 @@ func assertLexicalScopeQuery(
         continue
       }
 
+      guard let actual, let expected else {
+        XCTFail(
+          "For marker \(marker), actual result: \(actual?.description ?? "nil"), expected position: \(expected.debugDescription)"
+        )
+        continue
+      }
+
       XCTAssert(
         actual.positionAfterSkippingLeadingTrivia == expectedPosition,
         "For marker \(marker), actual result: \(actual) doesn't match expected value: \(sourceFileSyntax.token(at: expected.1!)?.description ?? "nil")"
