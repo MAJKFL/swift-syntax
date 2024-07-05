@@ -12,36 +12,45 @@
 
 import SwiftSyntax
 
-public enum LookupName {
+@_spi(Experimental) public enum LookupName {
+  /// Identifier associated with the name.
+  /// Could be an identifier of a variable, function or closure parameter and more
   case identifier(String, SyntaxProtocol)
-  case constructName(String, SyntaxProtocol)
+  /// Declaration associated with the name.
+  /// Could be class, struct, actor, protocol, function and more
+  case declaration(String, DeclSyntaxProtocol)
 
-  public var syntax: SyntaxProtocol {
+  /// Syntax associated with this name.
+  @_spi(Experimental) public var syntax: SyntaxProtocol {
     switch self {
     case .identifier(_, let syntax):
       syntax
-    case .constructName(_, let syntax):
+    case .declaration(_, let syntax):
       syntax
     }
   }
 
-  public var name: String {
+  /// Introduced name.
+  @_spi(Experimental) public var name: String {
     switch self {
     case .identifier(let name, _):
       name
-    case .constructName(let name, _):
+    case .declaration(let name, _):
       name
     }
   }
 
+  /// Checks if this name was introduced before the syntax used for lookup.
   func isBefore(_ lookedUpSyntax: SyntaxProtocol) -> Bool {
     syntax.position < lookedUpSyntax.position
   }
 
+  /// Checks if this name refers to the looked up phrase.
   func refersTo(_ lookedUpName: String) -> Bool {
     name == lookedUpName
   }
 
+  /// Extracts names introduced by the given `from` structure.
   static func getNames(from syntax: SyntaxProtocol) -> [LookupName] {
     switch Syntax(syntax).as(SyntaxEnum.self) {
     case .variableDecl(let variableDecl):
@@ -85,14 +94,17 @@ public enum LookupName {
     }
   }
 
+  /// Extracts name introduced by `identifierPattern`.
   private static func handle(identifierPattern: IdentifierPatternSyntax) -> [LookupName] {
     [.identifier(identifierPattern.identifier.text, identifierPattern)]
   }
 
+  /// Extracts name introduced by `closureParameter`.
   private static func handle(closureParameter: ClosureParameterSyntax) -> [LookupName] {
     [.identifier(closureParameter.secondName?.text ?? closureParameter.firstName.text, closureParameter)]
   }
 
+  /// Extracts name introduced by `closureShorthandParameter`.
   private static func handle(closureShorthandParameter: ClosureShorthandParameterSyntax) -> [LookupName] {
     let name = closureShorthandParameter.name.text
     if name != "_" {
@@ -102,23 +114,28 @@ public enum LookupName {
     }
   }
   
+  /// Extracts name introduced by `functionDecl`.
   private static func handle(functionDecl: FunctionDeclSyntax) -> [LookupName] {
-    [.constructName(functionDecl.name.text, functionDecl)]
+    [.declaration(functionDecl.name.text, functionDecl)]
   }
   
+  /// Extracts name introduced by `classDecl`.
   private static func handle(classDecl: ClassDeclSyntax) -> [LookupName] {
-    [.constructName(classDecl.name.text, classDecl)]
+    [.declaration(classDecl.name.text, classDecl)]
   }
   
+  /// Extracts name introduced by `structDecl`.
   private static func handle(structDecl: StructDeclSyntax) -> [LookupName] {
-    [.constructName(structDecl.name.text, structDecl)]
+    [.declaration(structDecl.name.text, structDecl)]
   }
   
+  /// Extracts name introduced by `actorDecl`.
   private static func handle(actorDecl: ActorDeclSyntax) -> [LookupName] {
-    [.constructName(actorDecl.name.text, actorDecl)]
+    [.declaration(actorDecl.name.text, actorDecl)]
   }
   
+  /// Extracts name introduced by `protocolDecl`.
   private static func handle(protocolDecl: ProtocolDeclSyntax) -> [LookupName] {
-    [.constructName(protocolDecl.name.text, protocolDecl)]
+    [.declaration(protocolDecl.name.text, protocolDecl)]
   }
 }

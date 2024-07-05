@@ -13,6 +13,7 @@
 import SwiftSyntax
 
 extension SyntaxProtocol {
+  /// Parent scope of this syntax node, or scope introduced by this syntax node.
   var scope: ScopeSyntax? {
     switch Syntax(self).as(SyntaxEnum.self) {
     case .sourceFile(let sourceFile):
@@ -106,6 +107,7 @@ extension IfExprSyntax: ScopeSyntax {
     getParent(for: self.parent, previousIfElse: self.elseKeyword == nil)
   }
   
+  /// Finds the parent scope, omitting parent `if` statements if part of their `else if` clause.
   private func getParent(for syntax: Syntax?, previousIfElse: Bool) -> ScopeSyntax? {
     guard let syntax else { return nil }
 
@@ -146,4 +148,3 @@ extension MemberBlockSyntax: ScopeSyntax {
     defaultLookupImplementation(for: name, at: syntax)
   }
 }
-

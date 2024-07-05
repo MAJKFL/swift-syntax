@@ -11,22 +11,29 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
-@_spi(Testing) import SwiftLexicalLookup
+@_spi(Experimental) import SwiftLexicalLookup
 import SwiftParser
 import SwiftSyntax
 import XCTest
 import _SwiftSyntaxTestSupport
 
+/// Used to define result type expectectations for given markers.
 enum MarkerExpectation {
-  case custom([String: SyntaxProtocol.Type])
+  /// Specifies a separate type for each result marker.
+  case distinct([String: SyntaxProtocol.Type])
+  /// Specifies a common type for all results
+  /// apart from the ones defined explicitly in `except`.
   case all(SyntaxProtocol.Type, except: [String: SyntaxProtocol.Type] = [:])
+  /// Does not assert result types.
   case none
 
+  /// Assert `actual` result labeled with `marker`
+  /// according to the rules represented by this expectation.
   fileprivate func assertMarkerType(marker: String, actual: SyntaxProtocol) {
     switch self {
     case .all(let expectedType, except: let dictionary):
       assertMarkerType(marker: marker, actual: actual, expectedType: dictionary[marker] ?? expectedType)
-    case .custom(let dictionary):
+    case .distinct(let dictionary):
       if let expectedType = dictionary[marker] {
         assertMarkerType(marker: marker, actual: actual, expectedType: expectedType)
       } else {
@@ -37,6 +44,7 @@ enum MarkerExpectation {
     }
   }
 
+  /// Assert whether `actual` type matches `expectedType`.
   private func assertMarkerType(marker: String, actual: SyntaxProtocol, expectedType: SyntaxProtocol.Type) {
     XCTAssert(
       actual.is(expectedType),
@@ -45,13 +53,9 @@ enum MarkerExpectation {
   }
 }
 
-/// Parse `source` and check if the method passed as `methodUnderTest` produces the same results as indicated in `expected`.
-///
-/// The `methodUnderTest` provides test inputs taken from the `expected` dictionary. The closure should return result produced by the tested method as an array with the same ordering.
-///
-/// - Parameters:
-///   - methodUnderTest: Closure with the tested method. Provides test argument from `expected` to the tested function. Should return method result as an array.
-///   - expected: A dictionary with parameter markers as keys and expected results as marker arrays ordered as returned by the test method.
+/// `methodUnderTest` is called with the token at every position marker in the keys of `expected`.
+/// It then asserts that the positions of the syntax nodes returned by `methodUnderTest` are the values in `expected`.
+/// It also checks whether result types match rules specified in `expectedResultTypes`.
 func assertLexicalScopeQuery(
   source: String,
   methodUnderTest: (SyntaxProtocol) -> ([SyntaxProtocol?]),
@@ -79,43 +83,42 @@ func assertLexicalScopeQuery(
     let result = methodUnderTest(testArgument)
 
     // Extract the expected results for the test argument
-    let expectedValues: [SyntaxProtocol?] = expectedMarkers.map { expectedMarker in
+    let expectedPositions: [AbsolutePosition?] = expectedMarkers.map { expectedMarker in
       guard let expectedMarker else { return nil }
 
-      guard let expectedPosition = markerDict[expectedMarker],
-        let expectedToken = sourceFileSyntax.token(at: AbsolutePosition(utf8Offset: expectedPosition))
+      guard let expectedPosition = markerDict[expectedMarker]
       else {
-        XCTFail("Could not find token at location \(marker)")
+        XCTFail("Could not find position for \(marker)")
         return nil
       }
 
-      return expectedToken
+      return AbsolutePosition(utf8Offset: expectedPosition)
     }
 
     // Compare number of actual results to the number of expected results
-    if result.count != expectedValues.count {
+    if result.count != expectedPositions.count {
       XCTFail(
-        "For marker \(marker), actual number of elements: \(result.count) doesn't match the expected: \(expectedValues.count)"
+        "For marker \(marker), actual number of elements: \(result.count) doesn't match the expected: \(expectedPositions.count)"
       )
     }
 
     // Assert validity of the output
-    for (actual, expected) in zip(result, zip(expectedMarkers, expectedValues)) {
+    for (actual, expected) in zip(result, zip(expectedMarkers, expectedPositions)) {
       if actual == nil && expected.1 == nil { continue }
 
       guard let actual else {
-        XCTFail("For marker \(marker), actual is nil while expected is \(expected.1!)")
+        XCTFail("For marker \(marker), actual is nil while expected is \(sourceFileSyntax.token(at: expected.1!)?.description ?? "nil")")
         continue
       }
 
-      guard let expectedValue = expected.1 else {
-        XCTFail("For marker \(marker), actual is \(actual) while expected is nil")
+      guard let expectedPosition = expected.1 else {
+        XCTFail("For marker \(marker), actual is \(actual) while expected position is nil")
         continue
       }
 
       XCTAssert(
-        actual.tokens(viewMode: .sourceAccurate).contains { $0.id == expectedValue.id },
-        "For marker \(marker), actual result: \(actual) doesn't match expected value: \(expected)"
+        actual.positionAfterSkippingLeadingTrivia == expectedPosition,
+        "For marker \(marker), actual result: \(actual) doesn't match expected value: \(sourceFileSyntax.token(at: expected.1!)?.description ?? "nil")"
       )
 
       if let expectedMarker = expected.0 {
@@ -125,10 +128,9 @@ func assertLexicalScopeQuery(
   }
 }
 
-/// Parse `source` and check if the lexical name lookup matches results passed as `expected`.
-///
-/// - Parameters:
-///   - expected: A dictionary of markers with reference location as keys and expected declarations as values.
+/// Name lookup is called with the token at every position marker in the keys of `expected`.
+/// It then asserts that the positions of the syntax nodes returned by the lookup are the values in `expected`.
+/// It also checks whether result types match rules specified in `expectedResultTypes`.
 func assertLexicalNameLookup(
   source: String,
   references: [String: [String]],

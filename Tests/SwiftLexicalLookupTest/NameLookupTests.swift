@@ -110,7 +110,7 @@ final class testNameLookup: XCTestCase {
         func foo() {
           let 1️⃣a = 1
           let 2️⃣b = 2
-          let 3️⃣x = { (a 4️⃣b: Int, 5️⃣c: Int) in
+          let 3️⃣x = { (4️⃣a b: Int, 5️⃣c: Int) in
               print(6️⃣a, 7️⃣b, 8️⃣c, 0️⃣$0)
           }
           9️⃣x()
@@ -192,22 +192,22 @@ final class testNameLookup: XCTestCase {
         class x {
           var 1️⃣a = 1
         
-          class 2️⃣b {}
-          struct 3️⃣b {}
+          2️⃣class b {}
+          3️⃣struct b {}
         
-          func 4️⃣a {
+          4️⃣func a {
             5️⃣a
             6️⃣b
             7️⃣c
             8️⃣d
           }
         
-          actor 9️⃣c {}
-          protocol 0️⃣d {}
+          9️⃣actor c {}
+          0️⃣protocol d {}
         }
         """,
       references: ["5️⃣": ["1️⃣", "4️⃣"], "6️⃣":["2️⃣", "3️⃣"], "7️⃣":["9️⃣"], "8️⃣":["0️⃣"]],
-      expectedResultTypes: .custom([
+      expectedResultTypes: .distinct([
         "1️⃣": IdentifierPatternSyntax.self,
         "2️⃣": ClassDeclSyntax.self,
         "3️⃣": StructDeclSyntax.self,
