@@ -58,7 +58,7 @@ enum MarkerExpectation {
 /// It also checks whether result types match rules specified in `expectedResultTypes`.
 func assertLexicalScopeQuery(
   source: String,
-  methodUnderTest: (SyntaxProtocol) -> ([SyntaxProtocol?]),
+  methodUnderTest: (TokenSyntax) -> ([SyntaxProtocol?]),
   expected: [String: [String?]],
   expectedResultTypes: MarkerExpectation = .none
 ) {
@@ -139,12 +139,7 @@ func assertLexicalNameLookup(
   assertLexicalScopeQuery(
     source: source,
     methodUnderTest: { argument in
-      // Extract reference name and use it for lookup
-      guard let name = argument.firstToken(viewMode: .sourceAccurate)?.text else {
-        XCTFail("Couldn't find a token at \(argument)")
-        return []
-      }
-      return argument.lookup(for: name).map { lookUpResult in
+      return argument.lookup(for: argument.text).map { lookUpResult in
         lookUpResult.syntax
       }
     },
