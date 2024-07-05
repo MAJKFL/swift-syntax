@@ -107,19 +107,14 @@ func assertLexicalScopeQuery(
       if actual == nil && expected.1 == nil { continue }
 
       guard let actual else {
-        XCTFail("For marker \(marker), actual is nil while expected is \(sourceFileSyntax.token(at: expected.1!)?.description ?? "nil")")
+        XCTFail(
+          "For marker \(marker), actual is nil while expected is \(sourceFileSyntax.token(at: expected.1!)?.description ?? "nil")"
+        )
         continue
       }
 
       guard let expectedPosition = expected.1 else {
         XCTFail("For marker \(marker), actual is \(actual) while expected position is nil")
-        continue
-      }
-
-      guard let actual, let expected else {
-        XCTFail(
-          "For marker \(marker), actual result: \(actual?.description ?? "nil"), expected position: \(expected.debugDescription)"
-        )
         continue
       }
 

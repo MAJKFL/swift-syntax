@@ -96,7 +96,7 @@ extension WhileStmtSyntax: ScopeSyntax {
       LookupName.getNames(from: element.condition)
     }
   }
-  
+
   func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
   }
@@ -106,7 +106,7 @@ extension IfExprSyntax: ScopeSyntax {
   var parentScope: ScopeSyntax? {
     getParent(for: self.parent, previousIfElse: self.elseKeyword == nil)
   }
-  
+
   /// Finds the parent scope, omitting parent `if` statements if part of their `else if` clause.
   private func getParent(for syntax: Syntax?, previousIfElse: Bool) -> ScopeSyntax? {
     guard let syntax else { return nil }
@@ -121,13 +121,13 @@ extension IfExprSyntax: ScopeSyntax {
       return getParent(for: syntax.parent, previousIfElse: previousIfElse)
     }
   }
-  
+
   var introducedNames: [LookupName] {
     conditions.flatMap { element in
       LookupName.getNames(from: element.condition)
     }
   }
-  
+
   func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     if let elseBody, elseBody.position <= syntax.position, elseBody.endPosition >= syntax.position {
       parentScope?.lookup(for: name, at: syntax) ?? []
@@ -143,7 +143,7 @@ extension MemberBlockSyntax: ScopeSyntax {
       LookupName.getNames(from: member.decl)
     }
   }
-  
+
   func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
   }

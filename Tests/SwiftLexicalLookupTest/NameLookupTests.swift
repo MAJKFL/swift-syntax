@@ -126,7 +126,7 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
-  
+
   func testWhileOptionalBindingLookup() {
     assertLexicalNameLookup(
       source: """
@@ -138,13 +138,13 @@ final class testNameLookup: XCTestCase {
           }
         }
         """,
-      references: ["3️⃣": ["1️⃣"], "5️⃣":["2️⃣"], "6️⃣":["4️⃣", "1️⃣"]],
+      references: ["3️⃣": ["1️⃣"], "5️⃣": ["2️⃣"], "6️⃣": ["4️⃣", "1️⃣"]],
       expectedResultTypes: .all(
         IdentifierPatternSyntax.self
       )
     )
   }
-  
+
   func testIfLetOptionalBindingSimpleCaseWithPrecedence() {
     assertLexicalNameLookup(
       source: """
@@ -154,13 +154,13 @@ final class testNameLookup: XCTestCase {
           print(7️⃣a, 8️⃣b)
         }
         """,
-      references: ["2️⃣": [], "4️⃣":["1️⃣"], "5️⃣":["1️⃣"], "6️⃣":["3️⃣"], "7️⃣":[], "8️⃣":[]],
+      references: ["2️⃣": [], "4️⃣": ["1️⃣"], "5️⃣": ["1️⃣"], "6️⃣": ["3️⃣"], "7️⃣": [], "8️⃣": []],
       expectedResultTypes: .all(
         IdentifierPatternSyntax.self
       )
     )
   }
-  
+
   func testIfLetWithElseIfAndNesting() {
     assertLexicalNameLookup(
       source: """
@@ -179,34 +179,34 @@ final class testNameLookup: XCTestCase {
           print(0️⃣a)
         }
         """,
-      references: ["3️⃣": ["2️⃣", "1️⃣"], "5️⃣":["4️⃣", "1️⃣"], "6️⃣":["1️⃣"], "7️⃣":["1️⃣"], "9️⃣":["8️⃣"], "0️⃣":[]],
+      references: ["3️⃣": ["2️⃣", "1️⃣"], "5️⃣": ["4️⃣", "1️⃣"], "6️⃣": ["1️⃣"], "7️⃣": ["1️⃣"], "9️⃣": ["8️⃣"], "0️⃣": []],
       expectedResultTypes: .all(
         IdentifierPatternSyntax.self
       )
     )
   }
-  
+
   func testMemberBlockScope() {
     assertLexicalNameLookup(
       source: """
         class x {
           var 1️⃣a = 1
-        
+
           2️⃣class b {}
           3️⃣struct b {}
-        
+
           4️⃣func a {
             5️⃣a
             6️⃣b
             7️⃣c
             8️⃣d
           }
-        
+
           9️⃣actor c {}
           0️⃣protocol d {}
         }
         """,
-      references: ["5️⃣": ["1️⃣", "4️⃣"], "6️⃣":["2️⃣", "3️⃣"], "7️⃣":["9️⃣"], "8️⃣":["0️⃣"]],
+      references: ["5️⃣": ["1️⃣", "4️⃣"], "6️⃣": ["2️⃣", "3️⃣"], "7️⃣": ["9️⃣"], "8️⃣": ["0️⃣"]],
       expectedResultTypes: .distinct([
         "1️⃣": IdentifierPatternSyntax.self,
         "2️⃣": ClassDeclSyntax.self,

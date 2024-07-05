@@ -113,27 +113,27 @@ import SwiftSyntax
       return []
     }
   }
-  
+
   /// Extracts name introduced by `functionDecl`.
   private static func handle(functionDecl: FunctionDeclSyntax) -> [LookupName] {
     [.declaration(functionDecl.name.text, functionDecl)]
   }
-  
+
   /// Extracts name introduced by `classDecl`.
   private static func handle(classDecl: ClassDeclSyntax) -> [LookupName] {
     [.declaration(classDecl.name.text, classDecl)]
   }
-  
+
   /// Extracts name introduced by `structDecl`.
   private static func handle(structDecl: StructDeclSyntax) -> [LookupName] {
     [.declaration(structDecl.name.text, structDecl)]
   }
-  
+
   /// Extracts name introduced by `actorDecl`.
   private static func handle(actorDecl: ActorDeclSyntax) -> [LookupName] {
     [.declaration(actorDecl.name.text, actorDecl)]
   }
-  
+
   /// Extracts name introduced by `protocolDecl`.
   private static func handle(protocolDecl: ProtocolDeclSyntax) -> [LookupName] {
     [.declaration(protocolDecl.name.text, protocolDecl)]
