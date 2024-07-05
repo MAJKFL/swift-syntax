@@ -18,14 +18,14 @@ extension SyntaxProtocol {
   }
 }
 
-public protocol ScopeSyntax: SyntaxProtocol {
+protocol ScopeSyntax: SyntaxProtocol {
   var parentScope: ScopeSyntax? { get }
   var introducedNames: [LookupName] { get }
   func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName]
 }
 
 extension ScopeSyntax {
-  public var parentScope: ScopeSyntax? {
+  var parentScope: ScopeSyntax? {
     getParent(for: self.parent)
   }
 

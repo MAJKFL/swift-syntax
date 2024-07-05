@@ -13,7 +13,7 @@
 import SwiftSyntax
 
 extension SyntaxProtocol {
-  public var scope: ScopeSyntax? {
+  var scope: ScopeSyntax? {
     switch Syntax(self).as(SyntaxEnum.self) {
     case .sourceFile(let sourceFile):
       sourceFile
@@ -27,6 +27,8 @@ extension SyntaxProtocol {
       whileStmt
     case .ifExpr(let ifExpr):
       ifExpr
+    case .memberBlock(let memberBlock):
+      memberBlock
     default:
       self.parent?.scope
     }
@@ -34,43 +36,43 @@ extension SyntaxProtocol {
 }
 
 extension SourceFileSyntax: ScopeSyntax {
-  public var parentScope: ScopeSyntax? {
+  var parentScope: ScopeSyntax? {
     nil
   }
 
-  public var introducedNames: [LookupName] {
+  var introducedNames: [LookupName] {
     []
   }
 
-  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     []
   }
 }
 
 extension CodeBlockSyntax: ScopeSyntax {
-  public var introducedNames: [LookupName] {
+  var introducedNames: [LookupName] {
     statements.flatMap { codeBlockItem in
       LookupName.getNames(from: codeBlockItem.item)
     }
   }
 
-  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax, positionSensitive: true)
   }
 }
 
 extension ForStmtSyntax: ScopeSyntax {
-  public var introducedNames: [LookupName] {
+  var introducedNames: [LookupName] {
     LookupName.getNames(from: pattern)
   }
 
-  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
   }
 }
 
 extension ClosureExprSyntax: ScopeSyntax {
-  public var introducedNames: [LookupName] {
+  var introducedNames: [LookupName] {
     signature?.parameterClause?.children(viewMode: .sourceAccurate).flatMap { parameter in
       if let parameterList = parameter.as(ClosureParameterListSyntax.self) {
         parameterList.children(viewMode: .sourceAccurate).flatMap { parameter in
@@ -82,49 +84,49 @@ extension ClosureExprSyntax: ScopeSyntax {
     } ?? []
   }
 
-  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
   }
 }
 
 extension WhileStmtSyntax: ScopeSyntax {
-  public var introducedNames: [LookupName] {
+  var introducedNames: [LookupName] {
     conditions.flatMap { element in
       LookupName.getNames(from: element.condition)
     }
   }
   
-  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     defaultLookupImplementation(for: name, at: syntax)
   }
 }
 
 extension IfExprSyntax: ScopeSyntax {
-  public var parentScope: ScopeSyntax? {
-    getParent(for: self.parent, previousIfExpr: self)
+  var parentScope: ScopeSyntax? {
+    getParent(for: self.parent, previousIfElse: self.elseKeyword == nil)
   }
   
-  private func getParent(for syntax: Syntax?, previousIfExpr: IfExprSyntax) -> ScopeSyntax? {
+  private func getParent(for syntax: Syntax?, previousIfElse: Bool) -> ScopeSyntax? {
     guard let syntax else { return nil }
 
     if let lookedUpScope = syntax.scope, lookedUpScope.id != self.id {
-      if let currentIfExpr = lookedUpScope.as(IfExprSyntax.self), previousIfExpr.elseKeyword != nil {
-        return getParent(for: syntax.parent, previousIfExpr: currentIfExpr)
+      if let currentIfExpr = lookedUpScope.as(IfExprSyntax.self), previousIfElse {
+        return getParent(for: syntax.parent, previousIfElse: currentIfExpr.elseKeyword == nil)
       } else {
         return lookedUpScope
       }
     } else {
-      return getParent(for: syntax.parent, previousIfExpr: previousIfExpr)
+      return getParent(for: syntax.parent, previousIfElse: previousIfElse)
     }
   }
   
-  public var introducedNames: [LookupName] {
+  var introducedNames: [LookupName] {
     conditions.flatMap { element in
       LookupName.getNames(from: element.condition)
     }
   }
   
-  public func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
     if let elseBody, elseBody.position <= syntax.position, elseBody.endPosition >= syntax.position {
       parentScope?.lookup(for: name, at: syntax) ?? []
     } else {
@@ -132,3 +134,16 @@ extension IfExprSyntax: ScopeSyntax {
     }
   }
 }
+
+extension MemberBlockSyntax: ScopeSyntax {
+  var introducedNames: [LookupName] {
+    members.flatMap { member in
+      LookupName.getNames(from: member.decl)
+    }
+  }
+  
+  func lookup(for name: String, at syntax: SyntaxProtocol) -> [LookupName] {
+    defaultLookupImplementation(for: name, at: syntax)
+  }
+}
+

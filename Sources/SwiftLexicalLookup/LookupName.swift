@@ -70,6 +70,16 @@ public enum LookupName {
       handle(closureShorthandParameter: closureShorthandParameter)
     case .closureParameter(let closureParameter):
       handle(closureParameter: closureParameter)
+    case .functionDecl(let functionDecl):
+      handle(functionDecl: functionDecl)
+    case .classDecl(let classDecl):
+      handle(classDecl: classDecl)
+    case .structDecl(let structDecl):
+      handle(structDecl: structDecl)
+    case .actorDecl(let actorDecl):
+      handle(actorDecl: actorDecl)
+    case .protocolDecl(let protocolDecl):
+      handle(protocolDecl: protocolDecl)
     default:
       []
     }
@@ -90,5 +100,25 @@ public enum LookupName {
     } else {
       return []
     }
+  }
+  
+  private static func handle(functionDecl: FunctionDeclSyntax) -> [LookupName] {
+    [.constructName(functionDecl.name.text, functionDecl)]
+  }
+  
+  private static func handle(classDecl: ClassDeclSyntax) -> [LookupName] {
+    [.constructName(classDecl.name.text, classDecl)]
+  }
+  
+  private static func handle(structDecl: StructDeclSyntax) -> [LookupName] {
+    [.constructName(structDecl.name.text, structDecl)]
+  }
+  
+  private static func handle(actorDecl: ActorDeclSyntax) -> [LookupName] {
+    [.constructName(actorDecl.name.text, actorDecl)]
+  }
+  
+  private static func handle(protocolDecl: ProtocolDeclSyntax) -> [LookupName] {
+    [.constructName(protocolDecl.name.text, protocolDecl)]
   }
 }

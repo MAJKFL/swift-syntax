@@ -185,4 +185,36 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
+  
+  func testMemberBlockScope() {
+    assertLexicalNameLookup(
+      source: """
+        class x {
+          var 1️⃣a = 1
+        
+          class 2️⃣b {}
+          struct 3️⃣b {}
+        
+          func 4️⃣a {
+            5️⃣a
+            6️⃣b
+            7️⃣c
+            8️⃣d
+          }
+        
+          actor 9️⃣c {}
+          protocol 0️⃣d {}
+        }
+        """,
+      references: ["5️⃣": ["1️⃣", "4️⃣"], "6️⃣":["2️⃣", "3️⃣"], "7️⃣":["9️⃣"], "8️⃣":["0️⃣"]],
+      expectedResultTypes: .custom([
+        "1️⃣": IdentifierPatternSyntax.self,
+        "2️⃣": ClassDeclSyntax.self,
+        "3️⃣": StructDeclSyntax.self,
+        "4️⃣": FunctionDeclSyntax.self,
+        "9️⃣": ActorDeclSyntax.self,
+        "0️⃣": ProtocolDeclSyntax.self,
+      ])
+    )
+  }
 }
