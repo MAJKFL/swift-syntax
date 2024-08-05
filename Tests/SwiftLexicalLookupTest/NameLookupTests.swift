@@ -830,7 +830,7 @@ final class testNameLookup: XCTestCase {
       ]
     )
   }
-  
+
   func testSwitchExpression() {
     assertLexicalNameLookup(
       source: """
@@ -851,6 +851,35 @@ final class testNameLookup: XCTestCase {
         "0️⃣": [],
       ],
       expectedResultTypes: .all(IdentifierPatternSyntax.self)
+    )
+  }
+
+  func testSimpleGenericParameterScope() {
+    assertLexicalNameLookup(
+      source: """
+        class A<1️⃣T1, 2️⃣T2> {
+          let 7️⃣x: 3️⃣T1 = v
+          let y: 4️⃣T2 = v
+
+          class B<5️⃣T1> {
+            let z: 6️⃣T1 = v
+            
+            func test() {
+              print(8️⃣x)
+            }
+          }
+        }
+        """,
+      references: [
+        "3️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["1️⃣"])],
+        "4️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["2️⃣"])],
+        "6️⃣": [
+          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["5️⃣"]),
+          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["1️⃣"]),
+        ],
+        "8️⃣": [.fromScope(MemberBlockSyntax.self, expectedNames: ["7️⃣"])],
+      ],
+      expectedResultTypes: .all(GenericParameterSyntax.self, except: ["7️⃣": IdentifierPatternSyntax.self])
     )
   }
 }

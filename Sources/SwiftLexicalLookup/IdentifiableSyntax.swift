@@ -47,3 +47,9 @@ import SwiftSyntax
     name
   }
 }
+
+@_spi(Experimental) extension GenericParameterSyntax: IdentifiableSyntax {
+  @_spi(Experimental) public var identifier: TokenSyntax {
+    name
+  }
+}

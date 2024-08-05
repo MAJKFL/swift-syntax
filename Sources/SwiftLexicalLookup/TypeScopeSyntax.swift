@@ -12,7 +12,7 @@
 
 import SwiftSyntax
 
-@_spi(Experimental) public protocol TypeScopeSyntax: ScopeSyntax, DeclSyntaxProtocol {}
+@_spi(Experimental) public protocol TypeScopeSyntax: WithGenericParametersScopeSyntax, DeclSyntaxProtocol {}
 
 extension TypeScopeSyntax {
   @_spi(Experimental) public var implicitInstanceAndTypeNames: [LookupName] {

@@ -338,7 +338,11 @@ import SwiftSyntax
 @_spi(Experimental) extension ClassDeclSyntax: TypeScopeSyntax {}
 @_spi(Experimental) extension StructDeclSyntax: TypeScopeSyntax {}
 @_spi(Experimental) extension EnumDeclSyntax: TypeScopeSyntax {}
-@_spi(Experimental) extension ExtensionDeclSyntax: TypeScopeSyntax {}
+@_spi(Experimental) extension ExtensionDeclSyntax: TypeScopeSyntax {
+  public var genericParameterClause: GenericParameterClauseSyntax? {
+    nil
+  }
+}
 
 @_spi(Experimental) extension AccessorDeclSyntax: ScopeSyntax {
   /// Implicit and/or explicit names introduced within the accessor.
@@ -368,8 +372,48 @@ import SwiftSyntax
 @_spi(Experimental) extension SwitchCaseSyntax: ScopeSyntax {
   /// Names introduced within `case` items.
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    label.as(SwitchCaseLabelSyntax.self)?.caseItems.flatMap { item in
-      LookupName.getNames(from: item.pattern)
+    label.as(SwitchCaseLabelSyntax.self)?.caseItems.flatMap { child in
+      LookupName.getNames(from: child.pattern)
     } ?? []
+  }
+}
+
+@_spi(Experimental) extension GenericParameterClauseSyntax: ScopeSyntax {
+  @_spi(Experimental) public var introducedNames: [LookupName] {
+    parameters.children(viewMode: .sourceAccurate).flatMap { child in
+      LookupName.getNames(from: child, accessibleAfter: child.endPosition)
+    }
+  }
+
+  @_spi(Experimental) public func lookup(
+    for identifier: Identifier?,
+    at origin: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    return defaultLookupImplementation(
+      for: identifier,
+      at: origin,
+      with: config,
+      propagateToParent: false
+    )
+      + lookupBypassingParentResults(
+        for: identifier,
+        at: origin,
+        with: config
+      )
+  }
+
+  private func lookupBypassingParentResults(
+    for identifier: Identifier?,
+    at origin: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    guard let parentScope else { return [] }
+
+    if let parentScope = Syntax(parentScope).asProtocol(SyntaxProtocol.self) as? WithGenericParametersScopeSyntax {
+      return parentScope.lookupInParent(for: identifier, at: origin, with: config)
+    } else {
+      return []
+    }
   }
 }
