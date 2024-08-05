@@ -20,7 +20,23 @@ import SwiftSyntax
 @_spi(Experimental) extension WithGenericParametersOrAssociatedTypesScopeSyntax {
   @_spi(Experimental) public var genericParameterClause: GenericParameterClauseSyntax? { nil }
   @_spi(Experimental) public var primaryAssociatedTypeClause: PrimaryAssociatedTypeClauseSyntax? { nil }
-  
+
+  /// Returns names matching lookup and passes lookup to
+  /// the generic parameter or primary associated type clause scopes.
+  ///
+  /// example:
+  /// ```swift
+  /// let a = 23
+  /// func foo<A>(a: A) {
+  ///   a // <-- start lookup here
+  /// }
+  /// ```
+  /// When starting lookup at the `a` reference,
+  /// lookup first visits the code block scope associated
+  /// with the function's body. Then, it's forwarded to the
+  /// function declaration scope and then to generic parameter
+  /// scope (`WithGenericParametersOrAssociatedTypesScopeSyntax`)
+  /// instead of it's actual parent scope (in this case: file scope).
   @_spi(Experimental) public func lookup(
     for identifier: Identifier?,
     at origin: AbsolutePosition,
@@ -39,6 +55,22 @@ import SwiftSyntax
       )
   }
 
+  /// Passes lookup to this scope's generic parameter or
+  /// primary associated type clause scope (`WithGenericParametersOrAssociatedTypesScopeSyntax`).
+  ///
+  /// example:
+  /// ```swift
+  /// let a = 23
+  /// func foo<A>(a: A) {
+  ///   a // <-- start lookup here
+  /// }
+  /// ```
+  /// When starting lookup at the `a` reference,
+  /// lookup first visits the code block scope associated
+  /// with the function's body. Then, it's forwarded to the
+  /// function declaration scope and then to generic parameter
+  /// scope (`WithGenericParametersOrAssociatedTypesScopeSyntax`)
+  /// with this method (instead of using standard `lookupInParent`).
   private func lookupThroughGenericParameterScope(
     for identifier: Identifier?,
     at origin: AbsolutePosition,

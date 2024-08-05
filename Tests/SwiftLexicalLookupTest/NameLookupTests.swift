@@ -882,7 +882,7 @@ final class testNameLookup: XCTestCase {
       expectedResultTypes: .all(GenericParameterSyntax.self, except: ["7️⃣": IdentifierPatternSyntax.self])
     )
   }
-  
+
   func testGenericParameterOrdering() {
     assertLexicalNameLookup(
       source: """
@@ -897,7 +897,7 @@ final class testNameLookup: XCTestCase {
       expectedResultTypes: .all(GenericParameterSyntax.self)
     )
   }
-  
+
   func testPrimaryAssociatedTypes() {
     assertLexicalNameLookup(
       source: """
@@ -908,27 +908,30 @@ final class testNameLookup: XCTestCase {
         """,
       references: [
         "3️⃣": [
-          .fromScope(MemberBlockSyntax.self, expectedNames: ["5️⃣"]), // Conceptually, should associated type be visible at it's declaration? It's a reference and declaration at the same time and all members' names are available inside their bodies.
-          .fromScope(PrimaryAssociatedTypeClauseSyntax.self, expectedNames: ["1️⃣"])
+          .fromScope(MemberBlockSyntax.self, expectedNames: ["5️⃣"]),  // Conceptually, should associated type be visible at it's declaration? It's a reference and declaration at the same time and all members' names are available inside their bodies, but at the same time it doesn't seem quite right...
+          .fromScope(PrimaryAssociatedTypeClauseSyntax.self, expectedNames: ["1️⃣"]),
         ],
         "4️⃣": [
           .fromScope(MemberBlockSyntax.self, expectedNames: ["6️⃣"]),
-          .fromScope(PrimaryAssociatedTypeClauseSyntax.self, expectedNames: ["2️⃣"])
+          .fromScope(PrimaryAssociatedTypeClauseSyntax.self, expectedNames: ["2️⃣"]),
         ],
       ],
-      expectedResultTypes: .all(PrimaryAssociatedTypeSyntax.self, except: [
-        "5️⃣": AssociatedTypeDeclSyntax.self,
-        "6️⃣": AssociatedTypeDeclSyntax.self,
-      ])
+      expectedResultTypes: .all(
+        PrimaryAssociatedTypeSyntax.self,
+        except: [
+          "5️⃣": AssociatedTypeDeclSyntax.self,
+          "6️⃣": AssociatedTypeDeclSyntax.self,
+        ]
+      )
     )
   }
-  
+
   func testFunctionDeclarationScope() {
     assertLexicalNameLookup(
       source: """
         class X<1️⃣A> {
           let 2️⃣a: A
-        
+
           func foo<3️⃣A, 4️⃣B>(5️⃣a: 6️⃣A, 7️⃣b: 8️⃣B) -> 9️⃣B {
             return 0️⃣a + 🔟b
           }
@@ -943,15 +946,18 @@ final class testNameLookup: XCTestCase {
         "9️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["4️⃣"])],
         "0️⃣": [
           .fromScope(FunctionDeclSyntax.self, expectedNames: ["5️⃣"]),
-          .fromScope(MemberBlockSyntax.self, expectedNames: ["2️⃣"])
+          .fromScope(MemberBlockSyntax.self, expectedNames: ["2️⃣"]),
         ],
         "🔟": [.fromScope(FunctionDeclSyntax.self, expectedNames: ["7️⃣"])],
       ],
-      expectedResultTypes: .all(GenericParameterSyntax.self, except: [
-        "2️⃣": IdentifierPatternSyntax.self,
-        "5️⃣": FunctionParameterSyntax.self,
-        "7️⃣": FunctionParameterSyntax.self,
-      ])
+      expectedResultTypes: .all(
+        GenericParameterSyntax.self,
+        except: [
+          "2️⃣": IdentifierPatternSyntax.self,
+          "5️⃣": FunctionParameterSyntax.self,
+          "7️⃣": FunctionParameterSyntax.self,
+        ]
+      )
     )
   }
 }

@@ -375,6 +375,7 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension GenericParameterClauseSyntax: GenericParameterOrAssociatedTypeScopeSyntax {
+  /// Generic parameter names introduced by this clause.
   @_spi(Experimental) public var introducedNames: [LookupName] {
     parameters.children(viewMode: .sourceAccurate).flatMap { child in
       LookupName.getNames(from: child, accessibleAfter: child.endPosition)
@@ -383,6 +384,7 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension PrimaryAssociatedTypeClauseSyntax: GenericParameterOrAssociatedTypeScopeSyntax {
+  /// Primary associated type names introduced by this clause.
   @_spi(Experimental) public var introducedNames: [LookupName] {
     primaryAssociatedTypes.children(viewMode: .sourceAccurate).flatMap { child in
       LookupName.getNames(from: child, accessibleAfter: child.endPosition)
@@ -391,12 +393,14 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension ProtocolDeclSyntax: WithGenericParametersOrAssociatedTypesScopeSyntax {
+  /// Protocol declarations don't introduce names by themselves.
   @_spi(Experimental) public var introducedNames: [LookupName] {
     []
   }
 }
 
 @_spi(Experimental) extension FunctionDeclSyntax: WithGenericParametersOrAssociatedTypesScopeSyntax {
+  /// Function parameters introduced by this function's signature.
   @_spi(Experimental) public var introducedNames: [LookupName] {
     signature.parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
