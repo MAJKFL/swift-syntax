@@ -53,3 +53,9 @@ import SwiftSyntax
     name
   }
 }
+
+@_spi(Experimental) extension PrimaryAssociatedTypeSyntax: IdentifiableSyntax {
+  @_spi(Experimental) public var identifier: TokenSyntax {
+    name
+  }
+}

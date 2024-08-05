@@ -882,4 +882,44 @@ final class testNameLookup: XCTestCase {
       expectedResultTypes: .all(GenericParameterSyntax.self, except: ["7️⃣": IdentifierPatternSyntax.self])
     )
   }
+  
+  func testGenericParameterOrdering() {
+    assertLexicalNameLookup(
+      source: """
+        class Foo<1️⃣A: 2️⃣A, B: 3️⃣A, 4️⃣C: 5️⃣D, D: 6️⃣C> {}
+        """,
+      references: [
+        "2️⃣": [],
+        "3️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["1️⃣"])],
+        "4️⃣": [],
+        "6️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["4️⃣"])],
+      ],
+      expectedResultTypes: .all(GenericParameterSyntax.self)
+    )
+  }
+  
+  func testPrimaryAssociatedTypes() {
+    assertLexicalNameLookup(
+      source: """
+        protocol Foo<1️⃣A, 2️⃣B> {
+            5️⃣associatedtype 3️⃣A
+            6️⃣associatedtype 4️⃣B
+        }
+        """,
+      references: [
+        "3️⃣": [
+          .fromScope(MemberBlockSyntax.self, expectedNames: ["5️⃣"]), // Conceptually, should associated type be visible at it's declaration? It's a reference and declaration at the same time and all members' names are available inside their bodies.
+          .fromScope(PrimaryAssociatedTypeClauseSyntax.self, expectedNames: ["1️⃣"])
+        ],
+        "4️⃣": [
+          .fromScope(MemberBlockSyntax.self, expectedNames: ["6️⃣"]),
+          .fromScope(PrimaryAssociatedTypeClauseSyntax.self, expectedNames: ["2️⃣"])
+        ],
+      ],
+      expectedResultTypes: .all(PrimaryAssociatedTypeSyntax.self, except: [
+        "5️⃣": AssociatedTypeDeclSyntax.self,
+        "6️⃣": AssociatedTypeDeclSyntax.self,
+      ])
+    )
+  }
 }
