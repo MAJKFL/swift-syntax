@@ -922,4 +922,36 @@ final class testNameLookup: XCTestCase {
       ])
     )
   }
+  
+  func testFunctionDeclarationScope() {
+    assertLexicalNameLookup(
+      source: """
+        class X<1️⃣A> {
+          let 2️⃣a: A
+        
+          func foo<3️⃣A, 4️⃣B>(5️⃣a: 6️⃣A, 7️⃣b: 8️⃣B) -> 9️⃣B {
+            return 0️⃣a + 🔟b
+          }
+        }
+        """,
+      references: [
+        "6️⃣": [
+          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["3️⃣"]),
+          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["1️⃣"]),
+        ],
+        "8️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["4️⃣"])],
+        "9️⃣": [.fromScope(GenericParameterClauseSyntax.self, expectedNames: ["4️⃣"])],
+        "0️⃣": [
+          .fromScope(FunctionDeclSyntax.self, expectedNames: ["5️⃣"]),
+          .fromScope(MemberBlockSyntax.self, expectedNames: ["2️⃣"])
+        ],
+        "🔟": [.fromScope(FunctionDeclSyntax.self, expectedNames: ["7️⃣"])],
+      ],
+      expectedResultTypes: .all(GenericParameterSyntax.self, except: [
+        "2️⃣": IdentifierPatternSyntax.self,
+        "5️⃣": FunctionParameterSyntax.self,
+        "7️⃣": FunctionParameterSyntax.self,
+      ])
+    )
+  }
 }

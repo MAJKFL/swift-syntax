@@ -391,7 +391,15 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension ProtocolDeclSyntax: WithGenericParametersOrAssociatedTypesScopeSyntax {
-  public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var introducedNames: [LookupName] {
     []
+  }
+}
+
+@_spi(Experimental) extension FunctionDeclSyntax: WithGenericParametersOrAssociatedTypesScopeSyntax {
+  @_spi(Experimental) public var introducedNames: [LookupName] {
+    signature.parameterClause.parameters.flatMap { parameter in
+      LookupName.getNames(from: parameter)
+    }
   }
 }

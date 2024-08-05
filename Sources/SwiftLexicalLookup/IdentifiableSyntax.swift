@@ -25,6 +25,12 @@ import SwiftSyntax
   }
 }
 
+@_spi(Experimental) extension FunctionParameterSyntax: IdentifiableSyntax {
+  @_spi(Experimental) public var identifier: TokenSyntax {
+    secondName ?? firstName
+  }
+}
+
 @_spi(Experimental) extension ClosureShorthandParameterSyntax: IdentifiableSyntax {
   @_spi(Experimental) public var identifier: TokenSyntax {
     name
