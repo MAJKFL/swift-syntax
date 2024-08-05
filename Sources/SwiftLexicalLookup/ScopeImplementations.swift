@@ -360,7 +360,16 @@ import SwiftSyntax
 
 @_spi(Experimental) extension CatchClauseSyntax: ScopeSyntax {
   /// Implicit `error` when there are no catch items.
-  public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var introducedNames: [LookupName] {
     return catchItems.isEmpty ? [.implicit(.error(self))] : []
+  }
+}
+
+@_spi(Experimental) extension SwitchCaseSyntax: ScopeSyntax {
+  /// Names introduced within `case` items.
+  @_spi(Experimental) public var introducedNames: [LookupName] {
+    label.as(SwitchCaseLabelSyntax.self)?.caseItems.flatMap { item in
+      LookupName.getNames(from: item.pattern)
+    } ?? []
   }
 }

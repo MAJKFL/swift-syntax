@@ -830,4 +830,27 @@ final class testNameLookup: XCTestCase {
       ]
     )
   }
+  
+  func testSwitchExpression() {
+    assertLexicalNameLookup(
+      source: """
+        switch {
+        case .x(let 1️⃣a, let 2️⃣b), .y(.c(let 3️⃣c), .z):
+          print(4️⃣a, 5️⃣b, 6️⃣c)
+        case .z(let 7️⃣a), .smth(let 8️⃣a)
+          print(9️⃣a)
+        default:
+          print(0️⃣a)
+        }
+        """,
+      references: [
+        "4️⃣": [.fromScope(SwitchCaseSyntax.self, expectedNames: ["1️⃣"])],
+        "5️⃣": [.fromScope(SwitchCaseSyntax.self, expectedNames: ["2️⃣"])],
+        "6️⃣": [.fromScope(SwitchCaseSyntax.self, expectedNames: ["3️⃣"])],
+        "9️⃣": [.fromScope(SwitchCaseSyntax.self, expectedNames: ["7️⃣", "8️⃣"])],
+        "0️⃣": [],
+      ],
+      expectedResultTypes: .all(IdentifierPatternSyntax.self)
+    )
+  }
 }
