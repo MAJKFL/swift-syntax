@@ -657,7 +657,7 @@ final class testNameLookup: XCTestCase {
             8️⃣oldValue
           }
         }
-        
+
         var x: Int = 2 {
           didSet(myNewValue) {
             print(9️⃣newValue)
