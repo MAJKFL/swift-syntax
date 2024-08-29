@@ -33,7 +33,10 @@ final class testNameLookup: XCTestCase {
         """,
       references: [
         "3️⃣": [.fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"])],
-        "5️⃣": [.fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"])],
+        "5️⃣": [
+          .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.almostVisible("6️⃣")]),
+          .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
+        ],
         "7️⃣": [
           .fromScope(CodeBlockSyntax.self, expectedNames: ["6️⃣"]),
           .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
@@ -145,7 +148,7 @@ final class testNameLookup: XCTestCase {
             let x = { [2️⃣weak self, 3️⃣a, 4️⃣unowned b] in
               print(5️⃣self, 6️⃣a, 8️⃣b)
             }
-            let b = 0
+            let 9️⃣b = 0
           }
         }
         """,
@@ -159,13 +162,17 @@ final class testNameLookup: XCTestCase {
           .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
           .fromFileScope(expectedNames: ["7️⃣"]),
         ],
-        "8️⃣": [.fromScope(ClosureExprSyntax.self, expectedNames: ["4️⃣"])],
+        "8️⃣": [
+          .fromScope(ClosureExprSyntax.self, expectedNames: ["4️⃣"]),
+          .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.almostVisible("9️⃣")]),
+        ],
       ],
       expectedResultTypes: .all(
         ClosureCaptureSyntax.self,
         except: [
           "1️⃣": IdentifierPatternSyntax.self,
           "7️⃣": ClassDeclSyntax.self,
+          "9️⃣": IdentifierPatternSyntax.self,
         ]
       )
     )
@@ -335,7 +342,7 @@ final class testNameLookup: XCTestCase {
             let 3️⃣a = 4️⃣a
           
             if let 5️⃣a = 6️⃣a {
-              let (a, b) = 8️⃣a
+              let (🔟a, b) = 8️⃣a
             }
           }
 
@@ -345,12 +352,16 @@ final class testNameLookup: XCTestCase {
       references: [
         "2️⃣": [.fromScope(MemberBlockSyntax.self, expectedNames: ["1️⃣", "9️⃣"])],
         "0️⃣": [.fromScope(MemberBlockSyntax.self, expectedNames: ["1️⃣", "9️⃣"])],
-        "4️⃣": [.fromScope(MemberBlockSyntax.self, expectedNames: ["1️⃣", "9️⃣"])],
+        "4️⃣": [
+          .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.almostVisible("3️⃣")]),
+          .fromScope(MemberBlockSyntax.self, expectedNames: ["1️⃣", "9️⃣"])
+        ],
         "6️⃣": [
           .fromScope(CodeBlockSyntax.self, expectedNames: ["3️⃣"]),
           .fromScope(MemberBlockSyntax.self, expectedNames: ["1️⃣", "9️⃣"]),
         ],
         "8️⃣": [
+          .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.almostVisible("🔟")]),
           .fromScope(IfExprSyntax.self, expectedNames: ["5️⃣"]),
           .fromScope(CodeBlockSyntax.self, expectedNames: ["3️⃣"]),
           .fromScope(MemberBlockSyntax.self, expectedNames: ["1️⃣", "9️⃣"]),
@@ -513,13 +524,19 @@ final class testNameLookup: XCTestCase {
         let 🔟a = 0️⃣d
         """,
       references: [
-        "3️⃣": [.fromFileScope(expectedNames: ["1️⃣", "8️⃣"])],
+        "3️⃣": [
+          .fromFileScope(expectedNames: ["1️⃣", "8️⃣"]),
+          .fromFileScope(expectedNames: [NameExpectation.almostVisible("🔟")])
+        ],
         "4️⃣": [.fromFileScope(expectedNames: ["2️⃣"])],
         "5️⃣": [.fromFileScope(expectedNames: ["7️⃣"])],
         "6️⃣": [.fromFileScope(expectedNames: ["9️⃣"])],
         "0️⃣": [.fromFileScope(expectedNames: ["9️⃣"])],
       ],
-      expectedResultTypes: .all(ClassDeclSyntax.self, except: ["8️⃣": IdentifierPatternSyntax.self])
+      expectedResultTypes: .all(ClassDeclSyntax.self, except: [
+        "8️⃣": IdentifierPatternSyntax.self,
+        "🔟": IdentifierPatternSyntax.self
+      ])
     )
   }
 
@@ -703,6 +720,7 @@ final class testNameLookup: XCTestCase {
           .fromScope(StructDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("1️⃣"))]),
         ],
         "6️⃣": [
+          .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.almostVisible(NameExpectation.identifier("7️⃣"))]),
           .fromScope(StructDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("5️⃣"))])
         ],
         "8️⃣": [

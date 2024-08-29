@@ -62,7 +62,13 @@ extension SequentialScopeSyntax {
           from: codeBlockItem.item,
           accessibleAfter: codeBlockItem.endPosition
         ).filter { introducedName in
-          checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
+          checkIdentifier(identifier, refersTo: introducedName)
+        }.map { introducedName in
+          if introducedName.isAccessible(at: lookUpPosition) {
+            return introducedName
+          } else {
+            return .almostVisible(introducedName)
+          }
         }
       } else {
         itemsWithoutNamedDecl.append(codeBlockItem)
@@ -70,8 +76,6 @@ extension SequentialScopeSyntax {
     }
 
     for codeBlockItem in itemsWithoutNamedDecl {
-      guard codeBlockItem.position <= lookUpPosition else { break }
-
       if let introducingToParentScope = Syntax(codeBlockItem.item).asProtocol(SyntaxProtocol.self)
         as? IntroducingToSequentialParentScopeSyntax
       {
@@ -98,7 +102,13 @@ extension SequentialScopeSyntax {
           from: codeBlockItem.item,
           accessibleAfter: codeBlockItem.endPosition
         ).filter { introducedName in
-          checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
+          checkIdentifier(identifier, refersTo: introducedName)
+        }.map { introducedName in
+          if introducedName.isAccessible(at: lookUpPosition) {
+            return introducedName
+          } else {
+            return .almostVisible(introducedName)
+          }
         }
       }
     }

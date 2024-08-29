@@ -110,6 +110,9 @@ import SwiftSyntax
   case declaration(NamedDeclSyntax)
   /// Name introduced implicitly by certain syntax nodes.
   case implicit(ImplicitDecl)
+  /// Name that's almost visible, but not accessible.
+  /// Could be used to produce diagnostics.
+  indirect case almostVisible(LookupName)
 
   /// Syntax associated with this name.
   @_spi(Experimental) public var syntax: SyntaxProtocol {
@@ -120,6 +123,8 @@ import SwiftSyntax
       return syntax
     case .implicit(let implicitName):
       return implicitName.syntax
+    case .almostVisible(let name):
+      return name.syntax
     }
   }
 
@@ -132,6 +137,8 @@ import SwiftSyntax
       return Identifier(syntax.name)
     case .implicit(let kind):
       return kind.identifier
+    case .almostVisible(let name):
+      return name.identifier
     }
   }
 

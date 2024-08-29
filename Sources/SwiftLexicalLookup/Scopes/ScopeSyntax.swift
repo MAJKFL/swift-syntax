@@ -113,8 +113,9 @@ extension SyntaxProtocol {
   func checkIdentifier(
     _ identifier: Identifier?,
     refersTo introducedName: LookupName,
-    at lookUpPosition: AbsolutePosition
+    at lookUpPosition: AbsolutePosition? = nil
   ) -> Bool {
-    introducedName.isAccessible(at: lookUpPosition) && (identifier == nil || introducedName.identifier == identifier!)
+    (lookUpPosition == nil || introducedName.isAccessible(at: lookUpPosition!)) &&
+    (identifier == nil || introducedName.identifier == identifier!)
   }
 }

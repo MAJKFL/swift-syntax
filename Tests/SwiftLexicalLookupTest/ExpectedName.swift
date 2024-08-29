@@ -62,6 +62,7 @@ enum NameExpectation: ExpectedName {
   case identifier(String)
   case declaration(String)
   case implicit(ImplicitNameExpectation)
+  indirect case almostVisible(ExpectedName)
 
   var marker: String {
     switch self {
@@ -70,6 +71,8 @@ enum NameExpectation: ExpectedName {
       return marker
     case .implicit(let implicitName):
       return implicitName.marker
+    case .almostVisible(let name):
+      return name.marker
     }
   }
 
@@ -79,6 +82,10 @@ enum NameExpectation: ExpectedName {
     case (.declaration, .declaration): break
     case (.implicit(let implicitName), .implicit(let implicitNameExpectation)):
       implicitNameExpectation.assertExpectation(marker: marker, for: implicitName)
+    case (.almostVisible(let name), .almostVisible(let expectedName)):
+      guard let nameExpectation = expectedName as? NameExpectation else { break }
+      
+      nameExpectation.assertExpectation(marker: marker, for: name)
     default:
       XCTFail("For marker \(marker), actual name kind \(name) doesn't match expected \(self)")
     }
