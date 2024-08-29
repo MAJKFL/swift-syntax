@@ -84,7 +84,7 @@ enum NameExpectation: ExpectedName {
       implicitNameExpectation.assertExpectation(marker: marker, for: implicitName)
     case (.almostVisible(let name), .almostVisible(let expectedName)):
       guard let nameExpectation = expectedName as? NameExpectation else { break }
-      
+
       nameExpectation.assertExpectation(marker: marker, for: name)
     default:
       XCTFail("For marker \(marker), actual name kind \(name) doesn't match expected \(self)")

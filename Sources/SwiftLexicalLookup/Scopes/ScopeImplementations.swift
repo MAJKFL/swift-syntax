@@ -291,6 +291,16 @@ import SwiftSyntax
     }
   }
 
+  @_spi(Experimental) public func lookup(
+    _ identifier: Identifier?,
+    at lookUpPosition: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    defaultLookupImplementation(identifier, at: lookUpPosition, with: config, propagateToParent: false).map { result in
+      .shouldPerformQualifiedLookup(result)
+    } + lookupInParent(identifier, at: lookUpPosition, with: config)
+  }
+
   /// Creates a result from associated type declarations
   /// made by it's members.
   func lookupAssociatedTypeDeclarations(

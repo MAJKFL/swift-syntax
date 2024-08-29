@@ -18,6 +18,8 @@ import SwiftSyntax
   case fromScope(ScopeSyntax, withNames: [LookupName])
   /// File scope and names that matched lookup.
   case fromFileScope(SourceFileSyntax, withNames: [LookupName])
+  /// Client should perform qualified lookup at this result.
+  indirect case shouldPerformQualifiedLookup(LookupResult)
 
   /// Associated scope.
   @_spi(Experimental) public var scope: ScopeSyntax? {
@@ -26,6 +28,8 @@ import SwiftSyntax
       return scopeSyntax
     case .fromFileScope(let fileScopeSyntax, _):
       return fileScopeSyntax
+    case .shouldPerformQualifiedLookup(let result):
+      return result.scope
     }
   }
 
@@ -34,6 +38,8 @@ import SwiftSyntax
     switch self {
     case .fromScope(_, let names), .fromFileScope(_, let names):
       return names
+    case .shouldPerformQualifiedLookup(let result):
+      return result.names
     }
   }
 

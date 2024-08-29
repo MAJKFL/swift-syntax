@@ -115,7 +115,7 @@ extension SyntaxProtocol {
     refersTo introducedName: LookupName,
     at lookUpPosition: AbsolutePosition? = nil
   ) -> Bool {
-    (lookUpPosition == nil || introducedName.isAccessible(at: lookUpPosition!)) &&
-    (identifier == nil || introducedName.identifier == identifier!)
+    (lookUpPosition == nil || introducedName.isAccessible(at: lookUpPosition!))
+      && (identifier == nil || introducedName.identifier == identifier!)
   }
 }

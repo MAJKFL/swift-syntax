@@ -18,6 +18,7 @@ import XCTest
 enum ResultExpectation {
   case fromScope(ScopeSyntax.Type, expectedNames: [ExpectedName])
   case fromFileScope(expectedNames: [ExpectedName])
+  indirect case shouldPerformQualifiedLookup(ResultExpectation)
 
   var expectedNames: [ExpectedName] {
     switch self {
@@ -25,6 +26,8 @@ enum ResultExpectation {
       return expectedNames
     case .fromFileScope(expectedNames: let expectedNames):
       return expectedNames
+    case .shouldPerformQualifiedLookup(let resultExpectation):
+      return resultExpectation.expectedNames
     }
   }
 
@@ -34,6 +37,8 @@ enum ResultExpectation {
       return "fromScope"
     case .fromFileScope:
       return "fromFileScope"
+    case .shouldPerformQualifiedLookup(let resultExpectation):
+      return "shouldPerformQualifiedLookup(" + resultExpectation.debugDescription + ")"
     }
   }
 
@@ -57,6 +62,8 @@ enum ResultExpectation {
         NameExpectation.assertNames(marker: marker, acutalNames: actualNames, expectedNames: expectedNames)
       case (.fromFileScope(_, let actualNames), .fromFileScope(let expectedNames)):
         NameExpectation.assertNames(marker: marker, acutalNames: actualNames, expectedNames: expectedNames)
+      case (.shouldPerformQualifiedLookup(let result), .shouldPerformQualifiedLookup(let resultExpectation)):
+        assertResult(marker: marker, result: [result], expectedValues: [resultExpectation])
       default:
         XCTFail(
           "For marker \(marker), actual result kind \(actual.debugDescription) doesn't match expected \(expected.debugDescription)"
@@ -73,6 +80,8 @@ extension LookupResult {
       return "fromScope"
     case .fromFileScope:
       return "fromFileScope"
+    case .shouldPerformQualifiedLookup(let result):
+      return "shouldPerformQualifiedLookup(" + result.debugDescription + ")"
     }
   }
 }
