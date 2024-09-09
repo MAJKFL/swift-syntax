@@ -17,7 +17,7 @@ import SwiftSyntax
   /// `self` keyword representing object instance.
   /// Could be associated with type declaration, extension,
   /// or closure captures.
-  case `self`(DeclSyntaxProtocol)
+  case `self`(SyntaxProtocol)
   /// `Self` keyword representing object type.
   /// Could be associated with type declaration or extension.
   case `Self`(DeclSyntaxProtocol)
@@ -132,6 +132,18 @@ import SwiftSyntax
       return Identifier(syntax.name)
     case .implicit(let kind):
       return kind.identifier
+    }
+  }
+  
+  /// Syntax associated with this name.
+  @_spi(Experimental) public var position: AbsolutePosition {
+    switch self {
+    case .identifier(let syntax, _):
+      return syntax.position
+    case .declaration(let syntax):
+      return syntax.name.position
+    case .implicit(let implicitName):
+      return implicitName.syntax.position
     }
   }
 

@@ -15,14 +15,17 @@ import Foundation
 @_spi(Experimental) public struct LookupConfig {
   /// Specifies behavior of file scope.
   @_spi(Experimental) public var fileScopeHandling: FileScopeHandlingConfig
+  @_spi(Experimental) public var finishInBraceStatement: Bool
 
   /// Creates a new lookup configuration.
   ///
   /// - `fileScopeHandling` - specifies behavior of file scope.
   ///   `memberBlockUpToLastDecl` by default.
   @_spi(Experimental) public init(
-    fileScopeHandling: FileScopeHandlingConfig = .memberBlockUpToLastDecl
+    fileScopeHandling: FileScopeHandlingConfig = .memberBlockUpToLastDecl,
+    finishInBraceStatement: Bool = false
   ) {
     self.fileScopeHandling = fileScopeHandling
+    self.finishInBraceStatement = finishInBraceStatement
   }
 }

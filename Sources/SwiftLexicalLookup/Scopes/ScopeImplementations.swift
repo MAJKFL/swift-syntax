@@ -137,7 +137,7 @@ import SwiftSyntax
         with: config
       )
 
-      return (members.isEmpty ? [] : [.fromFileScope(self, withNames: members)]) + sequentialNames
+      return []
     }
   }
 }
@@ -286,9 +286,7 @@ import SwiftSyntax
 @_spi(Experimental) extension MemberBlockSyntax: ScopeSyntax {
   /// All names introduced by members of this member scope.
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    members.flatMap { member in
-      LookupName.getNames(from: member.decl)
-    }
+    []
   }
 
   /// Creates a result from associated type declarations
@@ -436,8 +434,8 @@ import SwiftSyntax
 @_spi(Experimental) extension GenericParameterClauseSyntax: GenericParameterScopeSyntax {
   /// Generic parameter names introduced by this clause.
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    parameters.children(viewMode: .fixedUp).flatMap { child in
-      LookupName.getNames(from: child, accessibleAfter: child.endPosition)
+    parameters.children(viewMode: .fixedUp).reversed().flatMap { child in
+      LookupName.getNames(from: child)
     }
   }
 }
@@ -447,7 +445,7 @@ import SwiftSyntax
   @_spi(Experimental) public var introducedNames: [LookupName] {
     signature.parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
-    }
+    } + [.implicit(.self(self.name))]
   }
 }
 

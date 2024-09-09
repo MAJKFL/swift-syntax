@@ -68,10 +68,11 @@ extension SequentialScopeSyntax {
         itemsWithoutNamedDecl.append(codeBlockItem)
       }
     }
+    
+    results.append(LookupResult.getResult(for: self, withNames: currentChunk))
+    currentChunk = []
 
     for codeBlockItem in itemsWithoutNamedDecl {
-      guard codeBlockItem.position <= lookUpPosition else { break }
-
       if let introducingToParentScope = Syntax(codeBlockItem.item).asProtocol(SyntaxProtocol.self)
         as? IntroducingToSequentialParentScopeSyntax
       {
@@ -87,7 +88,7 @@ extension SequentialScopeSyntax {
 
         // If there are some names collected, create a new result for this scope.
         if !currentChunk.isEmpty {
-          results.append(LookupResult.getResult(for: self, withNames: currentChunk))
+          results.append(LookupResult.getResult(for: self, withNames: currentChunk.reversed()))
           currentChunk = []
         }
 
@@ -97,7 +98,7 @@ extension SequentialScopeSyntax {
         currentChunk += LookupName.getNames(
           from: codeBlockItem.item,
           accessibleAfter: codeBlockItem.endPosition
-        ).filter { introducedName in
+        ).reversed().filter { introducedName in
           checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
         }
       }
@@ -105,9 +106,10 @@ extension SequentialScopeSyntax {
 
     // If there are some names collected, create a new result for this scope.
     if !currentChunk.isEmpty {
-      results.append(LookupResult.getResult(for: self, withNames: currentChunk))
+      results.append(LookupResult.getResult(for: self, withNames: currentChunk.reversed()))
     }
 
-    return results.reversed() + lookupInParent(identifier, at: lookUpPosition, with: config)
+    return results.reversed() +
+    (config.finishInBraceStatement ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }

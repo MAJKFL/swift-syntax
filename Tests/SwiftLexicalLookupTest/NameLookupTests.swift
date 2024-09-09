@@ -1019,3 +1019,61 @@ final class testNameLookup: XCTestCase {
     )
   }
 }
+
+final class testAgainstASTScope: XCTestCase {
+  func testGenericParameterFunctionScope() {
+    assertLexicalNameLookup(
+      source: """
+        class Foo {
+          func 2️⃣bar<4️⃣A, 3️⃣B: A>() {
+            let 0️⃣a: 1️⃣A = 123
+          }
+        }
+        """,
+      references: [
+        "1️⃣": [
+          .fromScope(CodeBlockSyntax.self, expectedNames: ["0️⃣"]),
+          .fromScope(FunctionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("2️⃣"))]),
+          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["3️⃣", "4️⃣"])
+        ],
+      ],
+      useNilAsTheParameter: true
+    )
+  }
+  
+  func testLookupFromClassInsideCodeBlock() {
+    assertLexicalNameLookup(
+      source: """
+        class X {
+          typealias A = Int
+          
+          class Foo {
+            let a: A = 123
+            
+            func bar() {
+              let (a, b, c) = a + b
+              
+              guard let a, b else { return }
+              
+              let a = a + c
+              
+              guard let a, c else {
+                return a + b + c
+              }
+              
+              print(a, b, c)
+              
+              class 0️⃣A {}
+              
+              class A {}
+            }
+          }
+        }
+        """,
+      references: [
+        "0️⃣": [],
+      ],
+      useNilAsTheParameter: true
+    )
+  }
+}

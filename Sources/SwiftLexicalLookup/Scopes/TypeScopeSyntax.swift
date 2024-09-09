@@ -20,6 +20,6 @@ extension TypeScopeSyntax {
   }
 
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    implicitInstanceAndTypeNames
+    []
   }
 }
