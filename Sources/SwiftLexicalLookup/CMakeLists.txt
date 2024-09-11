@@ -17,6 +17,7 @@ add_swift_syntax_library(SwiftLexicalLookup
   
   Scopes/GenericParameterScopeSyntax.swift
   Scopes/IntroducingToSequentialParentScopeSyntax.swift
+  Scopes/LookInMembers.swift
   Scopes/ScopeImplementations.swift
   Scopes/ScopeSyntax.swift
   Scopes/SequentialScopeSyntax.swift

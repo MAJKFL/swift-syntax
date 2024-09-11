@@ -346,10 +346,10 @@ import SwiftSyntax
   }
 }
 
-@_spi(Experimental) extension ActorDeclSyntax: TypeScopeSyntax, WithGenericParametersScopeSyntax {}
-@_spi(Experimental) extension ClassDeclSyntax: TypeScopeSyntax, WithGenericParametersScopeSyntax {}
-@_spi(Experimental) extension StructDeclSyntax: TypeScopeSyntax, WithGenericParametersScopeSyntax {}
-@_spi(Experimental) extension EnumDeclSyntax: TypeScopeSyntax, WithGenericParametersScopeSyntax {}
+@_spi(Experimental) extension ActorDeclSyntax: TypeScopeSyntax, LookInMembers, WithGenericParametersScopeSyntax {}
+@_spi(Experimental) extension ClassDeclSyntax: TypeScopeSyntax, LookInMembers, WithGenericParametersScopeSyntax {}
+@_spi(Experimental) extension StructDeclSyntax: TypeScopeSyntax, LookInMembers, WithGenericParametersScopeSyntax {}
+@_spi(Experimental) extension EnumDeclSyntax: TypeScopeSyntax, LookInMembers, WithGenericParametersScopeSyntax {}
 @_spi(Experimental) extension ExtensionDeclSyntax: TypeScopeSyntax {}
 
 @_spi(Experimental) extension AccessorDeclSyntax: ScopeSyntax {
@@ -446,6 +446,29 @@ import SwiftSyntax
     signature.parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
     } + [.implicit(.self(self.name))]
+  }
+  
+  @_spi(Experimental) public func lookup(
+    _ identifier: Identifier?,
+    at lookUpPosition: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    var thisScopeResults: [LookupResult] = []
+    
+    if !signature.range.contains(lookUpPosition) {
+      thisScopeResults = defaultLookupImplementation(
+        identifier,
+        at: position,
+        with: config,
+        propagateToParent: false
+      )
+    }
+    
+    return thisScopeResults + lookupThroughGenericParameterScope(
+        identifier,
+        at: lookUpPosition,
+        with: config
+      )
   }
 }
 

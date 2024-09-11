@@ -83,7 +83,7 @@ import SwiftSyntax
     if let parentScope = Syntax(parentScope).asProtocol(SyntaxProtocol.self)
       as? WithGenericParametersScopeSyntax
     {
-      return parentScope.lookupInParent(identifier, at: lookUpPosition, with: config)
+      return parentScope.returningLookupFromGenericParameterScope(identifier, at: position, with: config)
     } else {
       return lookupInParent(identifier, at: lookUpPosition, with: config)
     }

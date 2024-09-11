@@ -18,6 +18,8 @@ import SwiftSyntax
   case fromScope(ScopeSyntax, withNames: [LookupName])
   /// File scope and names that matched lookup.
   case fromFileScope(SourceFileSyntax, withNames: [LookupName])
+  /// Declaration that members should be looked up.
+  case lookInMembers(NamedDeclSyntax)
 
   /// Associated scope.
   @_spi(Experimental) public var scope: ScopeSyntax? {
@@ -26,6 +28,8 @@ import SwiftSyntax
       return scopeSyntax
     case .fromFileScope(let fileScopeSyntax, _):
       return fileScopeSyntax
+    case .lookInMembers(let namedDecl):
+      return Syntax(namedDecl).asProtocol(SyntaxProtocol.self) as? ScopeSyntax
     }
   }
 
@@ -34,6 +38,8 @@ import SwiftSyntax
     switch self {
     case .fromScope(_, let names), .fromFileScope(_, let names):
       return names
+    case .lookInMembers(_):
+      return []
     }
   }
 
