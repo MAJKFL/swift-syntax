@@ -284,7 +284,7 @@ import SwiftSyntax
 
   /// Names introduced by the `if` optional binding conditions.
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    conditions.flatMap { element in
+    conditions.reversed().flatMap { element in
       LookupName.getNames(from: element.condition, accessibleAfter: element.endPosition)
     }
   }
@@ -511,7 +511,7 @@ import SwiftSyntax
   @_spi(Experimental) public var introducedNames: [LookupName] {
     signature.parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
-    } + [.implicit(.self(self.name))]
+    } + (parent?.is(MemberBlockItemSyntax.self) ?? false ? [.implicit(.self(self.name))] : [])
   }
   
   @_spi(Experimental) public func lookup(
