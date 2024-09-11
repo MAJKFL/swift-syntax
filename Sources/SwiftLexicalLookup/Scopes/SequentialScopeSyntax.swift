@@ -42,7 +42,8 @@ extension SequentialScopeSyntax {
     in codeBlockItems: some Collection<CodeBlockItemSyntax>,
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
-    with config: LookupConfig
+    with config: LookupConfig,
+    propagateToParent: Bool = true
   ) -> [LookupResult] {
     // Sequential scope needs to ensure all type declarations are
     // available in the whole scope (first loop) and
@@ -110,6 +111,6 @@ extension SequentialScopeSyntax {
     }
 
     return results.reversed() +
-    (config.finishInBraceStatement ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
+    (config.finishInBraceStatement || !propagateToParent ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }

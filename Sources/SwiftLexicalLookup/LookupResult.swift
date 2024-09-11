@@ -19,7 +19,7 @@ import SwiftSyntax
   /// File scope and names that matched lookup.
   case fromFileScope(SourceFileSyntax, withNames: [LookupName])
   /// Declaration that members should be looked up.
-  case lookInMembers(NamedDeclSyntax)
+  case lookInMembers(LookInMembersScopeSyntax)
 
   /// Associated scope.
   @_spi(Experimental) public var scope: ScopeSyntax? {

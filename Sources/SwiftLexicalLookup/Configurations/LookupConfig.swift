@@ -16,6 +16,7 @@ import Foundation
   /// Specifies behavior of file scope.
   @_spi(Experimental) public var fileScopeHandling: FileScopeHandlingConfig
   @_spi(Experimental) public var finishInBraceStatement: Bool
+  @_spi(Experimental) public var includeMembers: Bool
 
   /// Creates a new lookup configuration.
   ///
@@ -23,9 +24,11 @@ import Foundation
   ///   `memberBlockUpToLastDecl` by default.
   @_spi(Experimental) public init(
     fileScopeHandling: FileScopeHandlingConfig = .memberBlockUpToLastDecl,
-    finishInBraceStatement: Bool = false
+    finishInBraceStatement: Bool = false,
+    includeMembers: Bool = true
   ) {
     self.fileScopeHandling = fileScopeHandling
     self.finishInBraceStatement = finishInBraceStatement
+    self.includeMembers = includeMembers
   }
 }

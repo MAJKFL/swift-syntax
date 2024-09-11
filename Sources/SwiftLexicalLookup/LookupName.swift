@@ -135,11 +135,15 @@ import SwiftSyntax
     }
   }
   
-  /// Syntax associated with this name.
+  /// Position of this name's identifier.
   @_spi(Experimental) public var position: AbsolutePosition {
     switch self {
     case .identifier(let syntax, _):
-      return syntax.position
+      if let functionParameter = syntax.as(FunctionParameterSyntax.self) {
+        return functionParameter.secondName?.positionAfterSkippingLeadingTrivia ?? functionParameter.firstName.positionAfterSkippingLeadingTrivia
+      } else {
+        return syntax.position
+      }
     case .declaration(let syntax):
       return syntax.name.position
     case .implicit(let implicitName):

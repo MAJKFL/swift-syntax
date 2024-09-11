@@ -12,14 +12,6 @@
 
 import SwiftSyntax
 
-@_spi(Experimental) public protocol TypeScopeSyntax: ScopeSyntax, DeclSyntaxProtocol {}
-
-extension TypeScopeSyntax {
-  @_spi(Experimental) public var implicitInstanceAndTypeNames: [LookupName] {
-    [.implicit(.self(self)), .implicit(.Self(self))]
-  }
-
-  @_spi(Experimental) public var introducedNames: [LookupName] {
-    []
-  }
+@_spi(Experimental) public protocol LookInMembersScopeSyntax: ScopeSyntax {
+  var name: TokenSyntax { get }
 }

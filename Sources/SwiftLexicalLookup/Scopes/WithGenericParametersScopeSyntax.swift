@@ -12,8 +12,14 @@
 
 import SwiftSyntax
 
-@_spi(Experimental) public protocol WithGenericParametersScopeSyntax: ScopeSyntax {
+protocol WithGenericParametersScopeSyntax: ScopeSyntax {
   var genericParameterClause: GenericParameterClauseSyntax? { get }
+  
+  func returningLookupFromGenericParameterScope(
+    _ identifier: Identifier?,
+    at lookUpPosition: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult]
 }
 
 @_spi(Experimental) extension WithGenericParametersScopeSyntax {
@@ -84,10 +90,6 @@ import SwiftSyntax
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig
   ) -> [LookupResult] {
-    if let lookInMembers = Syntax(self).asProtocol(SyntaxProtocol.self) as? LookInMembers {
-      return [.lookInMembers(lookInMembers)] + lookupInParent(identifier, at: lookUpPosition, with: config)
-    } else {
-      return lookupInParent(identifier, at: lookUpPosition, with: config)
-    }
+    lookupInParent(identifier, at: lookUpPosition, with: config)
   }
 }
