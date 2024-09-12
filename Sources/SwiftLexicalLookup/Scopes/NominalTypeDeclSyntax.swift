@@ -12,15 +12,19 @@
 
 import SwiftSyntax
 
-protocol NominalTypeDeclSyntax: LookInMembersScopeSyntax, DeclSyntaxProtocol, WithGenericParametersScopeSyntax {
+protocol NominalTypeDeclSyntax: LookInMembersScopeSyntax, NamedDeclSyntax, WithGenericParametersScopeSyntax {
   var inheritanceClause: InheritanceClauseSyntax? { get }
 }
 
 extension NominalTypeDeclSyntax {
+  @_spi(Experimental) public var lookupMembersPosition: AbsolutePosition {
+    name.position
+  }
+
   @_spi(Experimental) public var introducedNames: [LookupName] {
     []
   }
-  
+
   func returningLookupFromGenericParameterScope(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,

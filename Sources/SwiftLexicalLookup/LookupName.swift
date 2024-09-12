@@ -134,13 +134,14 @@ import SwiftSyntax
       return kind.identifier
     }
   }
-  
+
   /// Position of this name's identifier.
   @_spi(Experimental) public var position: AbsolutePosition {
     switch self {
     case .identifier(let syntax, _):
       if let functionParameter = syntax.as(FunctionParameterSyntax.self) {
-        return functionParameter.secondName?.positionAfterSkippingLeadingTrivia ?? functionParameter.firstName.positionAfterSkippingLeadingTrivia
+        return functionParameter.secondName?.positionAfterSkippingLeadingTrivia
+          ?? functionParameter.firstName.positionAfterSkippingLeadingTrivia
       } else {
         return syntax.position
       }

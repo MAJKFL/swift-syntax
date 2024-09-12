@@ -69,7 +69,7 @@ extension SequentialScopeSyntax {
         itemsWithoutNamedDecl.append(codeBlockItem)
       }
     }
-    
+
     results.append(LookupResult.getResult(for: self, withNames: currentChunk))
     currentChunk = []
 
@@ -110,7 +110,8 @@ extension SequentialScopeSyntax {
       results.append(LookupResult.getResult(for: self, withNames: currentChunk.reversed()))
     }
 
-    return results.reversed() +
-    (config.finishInBraceStatement || !propagateToParent ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
+    return results.reversed()
+      + (config.finishInBraceStatement || !propagateToParent
+        ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }

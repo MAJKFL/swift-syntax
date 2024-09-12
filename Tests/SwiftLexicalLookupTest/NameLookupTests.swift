@@ -1034,13 +1034,13 @@ final class testAgainstASTScope: XCTestCase {
         "1️⃣": [
           .fromScope(CodeBlockSyntax.self, expectedNames: ["0️⃣"]),
           .fromScope(FunctionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("2️⃣"))]),
-          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["3️⃣", "4️⃣"])
-        ],
+          .fromScope(GenericParameterClauseSyntax.self, expectedNames: ["3️⃣", "4️⃣"]),
+        ]
       ],
       useNilAsTheParameter: true
     )
   }
-  
+
   func testLookupFromClassInsideCodeBlock() {
     assertLexicalNameLookup(
       source: """
@@ -1071,7 +1071,7 @@ final class testAgainstASTScope: XCTestCase {
         }
         """,
       references: [
-        "0️⃣": [],
+        "0️⃣": []
       ],
       useNilAsTheParameter: true
     )

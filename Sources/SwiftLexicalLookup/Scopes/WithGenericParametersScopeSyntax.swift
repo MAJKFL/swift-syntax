@@ -14,7 +14,7 @@ import SwiftSyntax
 
 protocol WithGenericParametersScopeSyntax: ScopeSyntax {
   var genericParameterClause: GenericParameterClauseSyntax? { get }
-  
+
   func returningLookupFromGenericParameterScope(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
@@ -84,7 +84,7 @@ protocol WithGenericParametersScopeSyntax: ScopeSyntax {
       return returningLookupFromGenericParameterScope(identifier, at: lookUpPosition, with: config)
     }
   }
-  
+
   func returningLookupFromGenericParameterScope(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
