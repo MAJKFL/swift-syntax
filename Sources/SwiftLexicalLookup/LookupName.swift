@@ -143,15 +143,18 @@ import SwiftSyntax
       case .functionParameter(let functionParameter):
         return functionParameter.secondName?.positionAfterSkippingLeadingTrivia
           ?? functionParameter.firstName.positionAfterSkippingLeadingTrivia
-      case .functionDecl(let functionDecl):
-        return functionDecl.name.position
       default:
         return syntax.position
       }
     case .declaration(let syntax):
       return syntax.name.position
     case .implicit(let implicitName):
-      return implicitName.syntax.position
+      switch Syntax(implicitName.syntax).as(SyntaxEnum.self) {
+      case .functionDecl(let functionDecl):
+        return functionDecl.name.position
+      default:
+        return implicitName.syntax.position
+      }
     }
   }
 

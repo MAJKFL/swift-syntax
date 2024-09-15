@@ -588,7 +588,7 @@ import SwiftSyntax
   @_spi(Experimental) public var introducedNames: [LookupName] {
     signature.parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
-    } + (parent?.is(MemberBlockItemSyntax.self) ?? false ? [.implicit(.self(self))] : [])
+    } + (parentScope?.is(MemberBlockSyntax.self) ?? false ? [.implicit(.self(self))] : [])
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
