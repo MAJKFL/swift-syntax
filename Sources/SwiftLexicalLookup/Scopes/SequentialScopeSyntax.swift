@@ -70,8 +70,10 @@ extension SequentialScopeSyntax {
       }
     }
 
-    results.append(LookupResult.getResult(for: self, withNames: currentChunk))
-    currentChunk = []
+    if !currentChunk.isEmpty {
+      results.append(LookupResult.getResult(for: self, withNames: currentChunk))
+      currentChunk = []
+    }
 
     for codeBlockItem in itemsWithoutNamedDecl {
       if let introducingToParentScope = Syntax(codeBlockItem.item).asProtocol(SyntaxProtocol.self)

@@ -22,14 +22,14 @@ import SwiftSyntax
   case lookInMembers(LookInMembersScopeSyntax)
 
   /// Associated scope.
-  @_spi(Experimental) public var scope: ScopeSyntax? {
+  @_spi(Experimental) public var scope: ScopeSyntax {
     switch self {
     case .fromScope(let scopeSyntax, _):
       return scopeSyntax
     case .fromFileScope(let fileScopeSyntax, _):
       return fileScopeSyntax
-    case .lookInMembers(let namedDecl):
-      return Syntax(namedDecl).asProtocol(SyntaxProtocol.self) as? ScopeSyntax
+    case .lookInMembers(let lookInMemb):
+      return lookInMemb
     }
   }
 
@@ -51,5 +51,54 @@ import SwiftSyntax
     default:
       return .fromScope(scope, withNames: names)
     }
+  }
+
+  @_spi(Experimental) public func debugDescription(
+    with sourceLocationConverter: SourceLocationConverter
+  ) -> String {
+    var description =
+      resultKindName + ": " + scope.scopeDebugDescription(sourceLocationConverter: sourceLocationConverter)
+
+    switch self {
+    case .lookInMembers:
+      break
+    default:
+      if !names.isEmpty {
+        description += "\n"
+      }
+    }
+
+    for (index, name) in names.enumerated() {
+      if index + 1 == names.count {
+        description += "`-" + name.debugDescription(with: sourceLocationConverter)
+      } else {
+        description += "|-" + name.debugDescription(with: sourceLocationConverter) + "\n"
+      }
+    }
+
+    return description
+  }
+
+  private var resultKindName: String {
+    switch self {
+    case .fromScope:
+      return "fromScope"
+    case .fromFileScope:
+      return "fromFileScope"
+    case .lookInMembers:
+      return "lookInMembers"
+    }
+  }
+}
+
+@_spi(Experimental) extension [LookupResult] {
+  @_spi(Experimental) public func debugDescription(with sourceLocationConverter: SourceLocationConverter) -> String {
+    var str: String = ""
+
+    for (index, result) in self.enumerated() {
+      str += result.debugDescription(with: sourceLocationConverter) + (index + 1 == self.count ? "" : "\n")
+    }
+
+    return str
   }
 }

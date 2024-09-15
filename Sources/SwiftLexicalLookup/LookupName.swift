@@ -139,10 +139,13 @@ import SwiftSyntax
   @_spi(Experimental) public var position: AbsolutePosition {
     switch self {
     case .identifier(let syntax, _):
-      if let functionParameter = syntax.as(FunctionParameterSyntax.self) {
+      switch Syntax(syntax).as(SyntaxEnum.self) {
+      case .functionParameter(let functionParameter):
         return functionParameter.secondName?.positionAfterSkippingLeadingTrivia
           ?? functionParameter.firstName.positionAfterSkippingLeadingTrivia
-      } else {
+      case .functionDecl(let functionDecl):
+        return functionDecl.name.position
+      default:
         return syntax.position
       }
     case .declaration(let syntax):
@@ -241,5 +244,28 @@ import SwiftSyntax
     accessibleAfter: AbsolutePosition? = nil
   ) -> [LookupName] {
     [.declaration(namedDecl)]
+  }
+
+  @_spi(Experimental) public func debugDescription(
+    with sourceLocationConverter: SourceLocationConverter
+  ) -> String {
+    let location = sourceLocationConverter.location(for: position)
+    let strName = (identifier != nil ? identifier!.name : "NO-NAME") + " at: \(location.line):\(location.column)"
+
+    switch self {
+    case .identifier:
+      let str = "identifier: \(strName)"
+
+      if let accessibleAfter {
+        let location = sourceLocationConverter.location(for: accessibleAfter)
+        return str + " after: \(location.line):\(location.column)"
+      } else {
+        return str
+      }
+    case .declaration:
+      return "declaration: \(strName)"
+    case .implicit:
+      return "implicit: \(strName)"
+    }
   }
 }
