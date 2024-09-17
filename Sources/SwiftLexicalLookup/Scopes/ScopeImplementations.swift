@@ -458,7 +458,7 @@ import SwiftSyntax
   }
 }
 @_spi(Experimental) extension ExtensionDeclSyntax: LookInMembersScopeSyntax {
-  public var lookupMembersPosition: AbsolutePosition {
+  @_spi(Experimental) public var lookupMembersPosition: AbsolutePosition {
     extendedType.position
   }
 
