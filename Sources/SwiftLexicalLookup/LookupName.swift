@@ -16,8 +16,8 @@ import SwiftSyntax
 @_spi(Experimental) public enum ImplicitDecl {
   /// `self` keyword representing object instance.
   /// Could be associated with type declaration, extension,
-  /// or closure captures.
-  case `self`(SyntaxProtocol)
+  /// or closure captures. Introduced at function edge.
+  case `self`(FunctionDeclSyntax)
   /// `Self` keyword representing object type.
   /// Could be associated with type declaration or extension.
   case `Self`(DeclSyntaxProtocol)
@@ -135,7 +135,13 @@ import SwiftSyntax
     }
   }
 
-  /// Position of this name's identifier.
+  /// Position of this name.
+  /// 
+  /// For some syntax nodes, their position doesn't reflect
+  /// the position at which a particular name was introduced at.
+  /// Such cases are function parameters (as they can
+  /// contain two identifiers) and function declarations (where name
+  /// is precided by access modifiers and `func` keyword).
   @_spi(Experimental) public var position: AbsolutePosition {
     switch self {
     case .identifier(let syntax, _):
@@ -149,8 +155,8 @@ import SwiftSyntax
     case .declaration(let syntax):
       return syntax.name.position
     case .implicit(let implicitName):
-      switch Syntax(implicitName.syntax).as(SyntaxEnum.self) {
-      case .functionDecl(let functionDecl):
+      switch implicitName {
+      case .self(let functionDecl):
         return functionDecl.name.position
       default:
         return implicitName.syntax.position
@@ -249,9 +255,9 @@ import SwiftSyntax
     [.declaration(namedDecl)]
   }
 
-  @_spi(Experimental) public func debugDescription(
-    with sourceLocationConverter: SourceLocationConverter
-  ) -> String {
+  /// Debug description of this lookup name.
+  @_spi(Experimental) public var debugDescription: String {
+    let sourceLocationConverter = SourceLocationConverter(fileName: "", tree: syntax.root)
     let location = sourceLocationConverter.location(for: position)
     let strName = (identifier != nil ? identifier!.name : "NO-NAME") + " at: \(location.line):\(location.column)"
 

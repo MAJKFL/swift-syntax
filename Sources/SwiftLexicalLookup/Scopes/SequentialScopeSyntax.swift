@@ -113,7 +113,7 @@ extension SequentialScopeSyntax {
     }
 
     return results.reversed()
-      + (config.finishInBraceStatement || !propagateToParent
+      + (config.finishInSequentialScope || !propagateToParent
         ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }

@@ -69,7 +69,7 @@ enum ResultExpectation {
         )
       default:
         XCTFail(
-          "For marker \(marker), actual result kind \(String(describing: actual.debugDescription)) doesn't match expected \(expected.debugDescription)"
+          "For marker \(marker), actual result kind \(actual.debugDescription) doesn't match expected \(expected.debugDescription)"
         )
       }
     }

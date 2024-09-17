@@ -18,7 +18,7 @@ import SwiftSyntax
   case fromScope(ScopeSyntax, withNames: [LookupName])
   /// File scope and names that matched lookup.
   case fromFileScope(SourceFileSyntax, withNames: [LookupName])
-  /// Declaration that members should be looked up.
+  /// Indicates where to perform member lookup.
   case lookInMembers(LookInMembersScopeSyntax)
 
   /// Associated scope.
@@ -53,11 +53,10 @@ import SwiftSyntax
     }
   }
 
-  @_spi(Experimental) public func debugDescription(
-    with sourceLocationConverter: SourceLocationConverter
-  ) -> String {
+  /// Debug description of this lookup name.
+  @_spi(Experimental) public var debugDescription: String {
     var description =
-      resultKindName + ": " + scope.scopeDebugDescription(sourceLocationConverter: sourceLocationConverter)
+      resultKindDebugName + ": " + scope.scopeDebugDescription
 
     switch self {
     case .lookInMembers:
@@ -70,16 +69,17 @@ import SwiftSyntax
 
     for (index, name) in names.enumerated() {
       if index + 1 == names.count {
-        description += "`-" + name.debugDescription(with: sourceLocationConverter)
+        description += "`-" + name.debugDescription
       } else {
-        description += "|-" + name.debugDescription(with: sourceLocationConverter) + "\n"
+        description += "|-" + name.debugDescription + "\n"
       }
     }
 
     return description
   }
 
-  private var resultKindName: String {
+  /// Debug name of this result kind.
+  private var resultKindDebugName: String {
     switch self {
     case .fromScope:
       return "fromScope"
@@ -92,11 +92,12 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension [LookupResult] {
-  @_spi(Experimental) public func debugDescription(with sourceLocationConverter: SourceLocationConverter) -> String {
+  /// Debug description this array of lookup results.
+  @_spi(Experimental) public var debugDescription: String {
     var str: String = ""
 
     for (index, result) in self.enumerated() {
-      str += result.debugDescription(with: sourceLocationConverter) + (index + 1 == self.count ? "" : "\n")
+      str += result.debugDescription + (index + 1 == self.count ? "" : "\n")
     }
 
     return str

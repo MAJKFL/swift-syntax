@@ -21,11 +21,7 @@ import _SwiftSyntaxTestSupport
 /// It also checks whether result types match rules specified in `expectedResultTypes`.
 func assertLexicalScopeQuery(
   source: String,
-  methodUnderTest: (
-    _ marker: String,
-    _ sourceLocationConverter: SourceLocationConverter,
-    _ tokenAtMarker: TokenSyntax
-  ) -> ([SyntaxProtocol?]),
+  methodUnderTest: (_ marker: String, _ tokenAtMarker: TokenSyntax) -> ([SyntaxProtocol?]),
   expected: [String: [String?]],
   expectedResultTypes: MarkerExpectation = .none
 ) {
@@ -47,11 +43,7 @@ func assertLexicalScopeQuery(
     }
 
     // Execute the tested method
-    let result = methodUnderTest(
-      marker,
-      SourceLocationConverter(fileName: "test", tree: sourceFileSyntax),
-      testArgument
-    )
+    let result = methodUnderTest(marker, testArgument)
 
     // Extract the expected results for the test argument
     let expectedPositions: [AbsolutePosition?] = expectedMarkers.map { expectedMarker in
@@ -100,14 +92,10 @@ func assertLexicalNameLookup(
 ) {
   assertLexicalScopeQuery(
     source: source,
-    methodUnderTest: { marker, sourceLocationConverter, tokenAtMarker in
+    methodUnderTest: { marker, tokenAtMarker in
       let lookupIdentifier = Identifier(tokenAtMarker)
 
       let result = tokenAtMarker.lookup(useNilAsTheParameter ? nil : lookupIdentifier, with: config)
-
-      let debugRepresentation = result.debugDescription(with: sourceLocationConverter)
-
-      print("\nFor marker \(marker) result:\n" + debugRepresentation + "\n")
 
       guard let expectedValues = references[marker] else {
         XCTFail("For marker \(marker), couldn't find result expectation")

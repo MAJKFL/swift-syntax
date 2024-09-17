@@ -22,8 +22,9 @@ import SwiftSyntax
     }
   }
 
-  func debugLineWithColumnDescription(sourceLocationConverter: SourceLocationConverter) -> String {
-    let location = sourceLocationConverter.location(for: position)
+  /// This node's line and column separated by `:`.
+  var debugLineWithColumnDescription: String {
+    let location = SourceLocationConverter(fileName: "", tree: root).location(for: position)
 
     return "\(location.line):\(location.column)"
   }
@@ -193,6 +194,7 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension ClosureExprSyntax: SequentialScopeSyntax {
+  /// Names introduced in this closure's signature.
   var introducedNamesInSignature: [LookupName] {
     let captureNames =
       signature?.capture?.items.flatMap { element in
@@ -213,23 +215,13 @@ import SwiftSyntax
     return captureNames + parameterNames
   }
 
+  /// Names introduced sequentially in body.
   var introducedNamesInBody: [LookupName] {
     statements.flatMap { codeBlockItem in
       LookupName.getNames(from: codeBlockItem.item, accessibleAfter: codeBlockItem.endPosition)
     }
   }
 
-  /// All names introduced by the closure signature and its body.
-  /// Could be closure captures or (shorthand) parameters.
-  ///
-  /// ### Example
-  /// ```swift
-  /// let x = { [weak self, a] b, _ in
-  ///   // <--
-  /// }
-  /// ```
-  /// During lookup, names available at the marked place are:
-  /// `self`, a, b.
   @_spi(Experimental) public var introducedNames: [LookupName] {
     introducedNamesInSignature + introducedNamesInBody
   }
@@ -238,6 +230,20 @@ import SwiftSyntax
     "ClosureExprScope"
   }
 
+  /// All names introduced by the closure signature and its body.
+  /// Could be closure captures, (shorthand) parameters or
+  /// sequential results from the body.
+  ///
+  /// ### Example
+  /// ```swift
+  /// let x = { [weak self, a] b, _ in
+  ///   let c = 42
+  ///   // <--
+  ///   let d = 42
+  /// }
+  /// ```
+  /// During lookup, names available at the marked place are:
+  /// `self`, `a`, `b` and `c`.
   @_spi(Experimental) public func lookup(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
@@ -254,7 +260,7 @@ import SwiftSyntax
       with: config,
       propagateToParent: false
     ) + (filteredSignatureNames.isEmpty ? [] : [.fromScope(self, withNames: filteredSignatureNames)])
-      + (config.finishInBraceStatement ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
+      + (config.finishInSequentialScope ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }
 
@@ -356,6 +362,8 @@ import SwiftSyntax
     "MemberBlockScope"
   }
 
+  /// Lookup results from this member block scope.
+  /// Bypasses names from this scope if `includeMembers` set to `false`.
   @_spi(Experimental) public func lookup(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
@@ -595,6 +603,8 @@ import SwiftSyntax
     "FunctionDeclScope"
   }
 
+  /// Lookup results from this function scope.
+  /// Routes to generic parameter clause scope if exists.
   @_spi(Experimental) public func lookup(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,

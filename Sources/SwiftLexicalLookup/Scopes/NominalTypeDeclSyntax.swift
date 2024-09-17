@@ -21,10 +21,13 @@ extension NominalTypeDeclSyntax {
     name.position
   }
 
+  /// Nominal type doesn't introduce any names by itself.
   @_spi(Experimental) public var introducedNames: [LookupName] {
     []
   }
 
+  /// Function used by generic parameter clause
+  /// scope on return from it's lookup.
   func returningLookupFromGenericParameterScope(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,

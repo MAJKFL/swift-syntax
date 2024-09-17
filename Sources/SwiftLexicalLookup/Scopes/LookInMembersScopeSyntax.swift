@@ -13,5 +13,6 @@
 import SwiftSyntax
 
 @_spi(Experimental) public protocol LookInMembersScopeSyntax: ScopeSyntax {
+  /// Position used for member lookup.
   var lookupMembersPosition: AbsolutePosition { get }
 }

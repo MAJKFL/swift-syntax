@@ -120,7 +120,8 @@ extension SyntaxProtocol {
     introducedName.isAccessible(at: lookUpPosition) && (identifier == nil || introducedName.identifier == identifier!)
   }
 
-  @_spi(Experimental) public func scopeDebugDescription(sourceLocationConverter: SourceLocationConverter) -> String {
-    scopeDebugName + " " + debugLineWithColumnDescription(sourceLocationConverter: sourceLocationConverter)
+  /// Debug description of this scope.
+  @_spi(Experimental) public var scopeDebugDescription: String {
+    scopeDebugName + " " + debugLineWithColumnDescription
   }
 }
