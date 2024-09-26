@@ -14,12 +14,13 @@ import SwiftSyntax
 
 protocol NominalTypeDeclSyntax: LookInMembersScopeSyntax, NamedDeclSyntax, WithGenericParametersScopeSyntax {
   var genericParameterClause: GenericParameterClauseSyntax? { get }
+  var genericWhereClause: GenericWhereClauseSyntax? { get }
   var inheritanceClause: InheritanceClauseSyntax? { get }
 }
 
 extension NominalTypeDeclSyntax {
   @_spi(Experimental) public var lookupMembersPosition: AbsolutePosition {
-    name.position
+    name.positionAfterSkippingLeadingTrivia
   }
 
   /// Nominal type doesn't introduce any names by itself.
@@ -38,7 +39,7 @@ extension NominalTypeDeclSyntax {
       return lookupInParent(identifier, at: lookUpPosition, with: config)
     } else if let genericParameterClause, genericParameterClause.range.contains(lookUpPosition) {
       return lookupInParent(identifier, at: lookUpPosition, with: config)
-    } else if name.range.contains(lookUpPosition) {
+    } else if name.range.contains(lookUpPosition) || genericWhereClause?.range.contains(lookUpPosition) ?? false {
       return lookupInParent(identifier, at: lookUpPosition, with: config)
     } else {
       return [.lookInMembers(self)] + lookupInParent(identifier, at: lookUpPosition, with: config)

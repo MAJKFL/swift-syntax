@@ -112,6 +112,8 @@ import SwiftSyntax
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig
   ) -> [LookupResult] {
+    guard config.includeMembers else { return [] }
+    
     switch config.fileScopeHandling {
     case .memberBlock:
       guard config.includeMembers else { return [] }
@@ -671,8 +673,14 @@ import SwiftSyntax
       )
     }
 
-    let lookInMembers: [LookupResult] =
-      inheritanceClause?.range.contains(lookUpPosition) ?? false ? [] : [.lookInMembers(self)]
+    let lookInMembers: [LookupResult]
+    
+    if !(inheritanceClause?.range.contains(lookUpPosition) ?? false) &&
+        !(genericWhereClause?.range.contains(lookUpPosition) ?? false) {
+      lookInMembers = [.lookInMembers(self)]
+    } else {
+      lookInMembers = []
+    }
 
     return results
       + defaultLookupImplementation(
@@ -878,10 +886,10 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     with config: LookupConfig
   ) -> [LookupResult] {
     if bindings.first?.accessorBlock?.range.contains(lookUpPosition) ?? false {
-      let shouldIntroduceSelf = parentScope?.is(MemberBlockSyntax.self) ?? false
+      let isMember = parentScope?.is(MemberBlockSyntax.self) ?? false
 
       return defaultLookupImplementation(
-        in: LookupName.getNames(from: self) + (shouldIntroduceSelf ? [.implicit(.self(self))] : []),
+        in: (isMember ? [.implicit(.self(self))] : LookupName.getNames(from: self)),
         identifier,
         at: lookUpPosition,
         with: config
