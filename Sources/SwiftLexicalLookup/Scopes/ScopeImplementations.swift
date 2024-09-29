@@ -31,130 +31,13 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension SourceFileSyntax: SequentialScopeSyntax {
-  /// All names introduced in the file scope
-  /// according to the default strategy: `memberBlockUpToLastDecl`.
+  /// File Scope doesn't introduce any names.
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    introducedNames(using: .memberBlockUpToLastDecl)
+    []
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
     "FileScope"
-  }
-
-  /// All names introduced in the file scope
-  /// using the provided configuration.
-  ///
-  /// Example usage:
-  /// ```swift
-  /// class a {}
-  /// class b {
-  ///   // <--
-  /// }
-  /// let c = 0
-  /// class d {}
-  /// if true {}
-  /// class e {}
-  /// let f = 0
-  /// ```
-  /// During lookup, according to different configurations,
-  /// names available at the marked place are:
-  /// - for `memberBlockUpToLastDecl` - a, b, c, d
-  /// - for `memberBlock` - a, b, c, d, e, f
-  /// - for `codeBlock` - a
-  @_spi(Experimental) public func introducedNames(using fileScopeHandling: FileScopeHandlingConfig) -> [LookupName] {
-    switch fileScopeHandling {
-    case .memberBlockUpToLastDecl:
-      var encounteredNonDeclaration = false
-
-      return statements.flatMap { codeBlockItem in
-        let item = codeBlockItem.item
-
-        if encounteredNonDeclaration {
-          return LookupName.getNames(from: item, accessibleAfter: codeBlockItem.endPosition)
-        } else {
-          if item.is(DeclSyntax.self) {
-            return LookupName.getNames(from: item)
-          } else {
-            encounteredNonDeclaration = true
-            return LookupName.getNames(from: item, accessibleAfter: codeBlockItem.endPosition)
-          }
-        }
-      }
-    case .memberBlock:
-      return statements.flatMap { codeBlockItem in
-        LookupName.getNames(from: codeBlockItem.item)
-      }
-    }
-  }
-
-  /// Returns names matching lookup using provided file
-  /// scope handling configuration.
-  ///
-  /// Example usage:
-  /// ```swift
-  /// class a {}
-  /// class b {
-  ///   // <--
-  /// }
-  /// let c = 0
-  /// class d {}
-  /// if true {}
-  /// class e {}
-  /// let f = 0
-  /// ```
-  /// According to different configurations,
-  /// names available at the marked place are:
-  /// - for `memberBlockUpToLastDecl` - a, b, c, d
-  /// - for `memberBlock` - a, b, c, d, e, f
-  /// - for `codeBlock` - a
-  @_spi(Experimental) public func lookup(
-    _ identifier: Identifier?,
-    at lookUpPosition: AbsolutePosition,
-    with config: LookupConfig
-  ) -> [LookupResult] {
-    guard config.includeMembers else { return [] }
-    
-    switch config.fileScopeHandling {
-    case .memberBlock:
-      guard config.includeMembers else { return [] }
-
-      let names = introducedNames(using: .memberBlock)
-        .filter { lookupName in
-          checkIdentifier(identifier, refersTo: lookupName, at: lookUpPosition)
-        }
-
-      return names.isEmpty ? [] : [.fromFileScope(self, withNames: names)]
-    case .memberBlockUpToLastDecl:
-      var members: [LookupName] = []
-      var sequentialItems: [CodeBlockItemSyntax] = []
-      var encounteredNonDeclaration = false
-
-      for codeBlockItem in statements {
-        let item = codeBlockItem.item
-
-        if encounteredNonDeclaration {
-          sequentialItems.append(codeBlockItem)
-        } else if item.is(DeclSyntax.self) {
-          let foundNames = LookupName.getNames(from: item)
-          members.append(
-            contentsOf: foundNames.filter { checkIdentifier(identifier, refersTo: $0, at: lookUpPosition) }
-          )
-        } else {
-          encounteredNonDeclaration = true
-          sequentialItems.append(codeBlockItem)
-        }
-      }
-
-      let sequentialNames = sequentialLookup(
-        in: sequentialItems,
-        identifier,
-        at: lookUpPosition,
-        with: config
-      )
-
-      return (members.isEmpty || !config.includeMembers ? [] : [.fromFileScope(self, withNames: members)])
-        + sequentialNames
-    }
   }
 }
 
@@ -375,29 +258,13 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension MemberBlockSyntax: ScopeSyntax {
-  /// All names introduced by members of this member scope.
+  /// Member Block Scope doesn't introduce any results.
   @_spi(Experimental) public var introducedNames: [LookupName] {
-    members.flatMap { member in
-      LookupName.getNames(from: member.decl)
-    }
+    []
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
     "MemberBlockScope"
-  }
-
-  /// Lookup results from this member block scope.
-  /// Bypasses names from this scope if `includeMembers` set to `false`.
-  @_spi(Experimental) public func lookup(
-    _ identifier: Identifier?,
-    at lookUpPosition: AbsolutePosition,
-    with config: LookupConfig
-  ) -> [LookupResult] {
-    if config.includeMembers {
-      return defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
-    } else {
-      return lookupInParent(identifier, at: lookUpPosition, with: config)
-    }
   }
 
   /// Creates a result from associated type declarations
