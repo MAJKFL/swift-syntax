@@ -221,6 +221,12 @@ import SwiftSyntax
       return tuplePattern.elements.flatMap { tupleElement in
         getNames(from: tupleElement.pattern, accessibleAfter: accessibleAfter)
       }
+    case .tupleExpr(let tupleExpr):
+      return tupleExpr.elements.flatMap { tupleElement in
+        getNames(from: tupleElement, accessibleAfter: accessibleAfter)
+      }
+    case .labeledExpr(let labeledExpr):
+      return getNames(from: labeledExpr.expression, accessibleAfter: accessibleAfter)
     case .valueBindingPattern(let valueBindingPattern):
       return getNames(from: valueBindingPattern.pattern, accessibleAfter: accessibleAfter)
     case .expressionPattern(let expressionPattern):

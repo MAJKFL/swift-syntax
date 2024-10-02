@@ -24,7 +24,7 @@ extension NominalTypeDeclSyntax {
   }
 
   /// Nominal type doesn't introduce any names by itself.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 

@@ -54,8 +54,10 @@ extension SyntaxProtocol {
 @_spi(Experimental) public protocol ScopeSyntax: SyntaxProtocol {
   /// Parent of this scope, or `nil` if it is the root.
   var parentScope: ScopeSyntax? { get }
-  /// Names found in this scope. Ordered from first to last introduced.
-  var introducedNames: [LookupName] { get }
+  /// Names introduced by default in this scope.
+  /// Don't include names that might be added depending on the lookup position (like `self`).
+  /// Ordered from first to last introduced.
+  var defaultIntroducedNames: [LookupName] { get }
   /// Debug description of this scope.
   var scopeDebugName: String { get }
   /// Finds all declarations `identifier` refers to. `syntax` specifies the node lookup was triggered with.
@@ -94,7 +96,7 @@ extension SyntaxProtocol {
     propagateToParent: Bool = true
   ) -> [LookupResult] {
     let filteredNames =
-      (names ?? introducedNames)
+    (names ?? defaultIntroducedNames)
       .filter { introducedName in
         checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
       }

@@ -19,7 +19,7 @@ protocol FunctionScopeSyntax: DeclSyntaxProtocol, WithGenericParametersScopeSynt
 
 extension FunctionScopeSyntax {
   /// Function parameters introduced by this function's signature.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     signature.parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
     } + (parentScope?.is(MemberBlockSyntax.self) ?? false ? [.implicit(.self(self))] : [])

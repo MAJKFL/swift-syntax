@@ -32,7 +32,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension SourceFileSyntax: SequentialScopeSyntax {
   /// File Scope doesn't introduce any names.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 
@@ -44,7 +44,7 @@ import SwiftSyntax
 @_spi(Experimental) extension CodeBlockSyntax: SequentialScopeSyntax {
   /// Names introduced in the code block scope
   /// accessible after their declaration.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     statements.flatMap { codeBlockItem in
       LookupName.getNames(from: codeBlockItem.item, accessibleAfter: codeBlockItem.endPosition)
     }
@@ -70,7 +70,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension ForStmtSyntax: ScopeSyntax {
   /// Names introduced in the `for` body.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     LookupName.getNames(from: pattern)
   }
 
@@ -123,7 +123,7 @@ import SwiftSyntax
     }
   }
 
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     introducedNamesInSignature + introducedNamesInBody
   }
 
@@ -173,7 +173,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension WhileStmtSyntax: ScopeSyntax {
   /// Names introduced by the `while` loop by its conditions.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     conditions.reversed().flatMap { element in
       LookupName.getNames(from: element.condition, accessibleAfter: element.endPositionBeforeTrailingTrivia)
     }
@@ -222,7 +222,7 @@ import SwiftSyntax
   }
 
   /// Names introduced by the `if` optional binding conditions.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     conditions.reversed().flatMap { element in
       LookupName.getNames(from: element.condition, accessibleAfter: element.endPosition)
     }
@@ -259,7 +259,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension MemberBlockSyntax: ScopeSyntax {
   /// Member Block Scope doesn't introduce any results.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 
@@ -293,7 +293,7 @@ import SwiftSyntax
     }
   }
 
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 
@@ -353,7 +353,7 @@ import SwiftSyntax
     extendedType.position
   }
 
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 
@@ -382,7 +382,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension AccessorDeclSyntax: ScopeSyntax {
   /// Implicit and/or explicit names introduced within the accessor.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     if let parameters {
       return LookupName.getNames(from: parameters)
     } else {
@@ -439,7 +439,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension CatchClauseSyntax: ScopeSyntax {
   /// Implicit `error` when there are no catch items.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     return catchItems.isEmpty ? [.implicit(.error(self))] : []
   }
 
@@ -452,13 +452,17 @@ import SwiftSyntax
   /// Names introduced within `case` items.
   var namesFromLabel: [LookupName] {
     label.as(SwitchCaseLabelSyntax.self)?.caseItems.flatMap { child in
-      LookupName.getNames(from: child.pattern)
+      if let exprPattern = child.pattern.as(ExpressionPatternSyntax.self) {
+        return LookupName.getNames(from: exprPattern.expression)
+      } else {
+        return LookupName.getNames(from: child.pattern)
+      }
     } ?? []
   }
 
   /// Names introduced within `case` items
   /// as well as sequential names from inside this case.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     statements.flatMap { codeBlockItem in
       LookupName.getNames(from: codeBlockItem.item, accessibleAfter: codeBlockItem.endPosition)
     } + namesFromLabel
@@ -493,7 +497,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension ProtocolDeclSyntax: ScopeSyntax, LookInMembersScopeSyntax {
   /// Protocol declarations don't introduce names by themselves.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     [.implicit(.Self(self))]
   }
 
@@ -561,7 +565,7 @@ import SwiftSyntax
 
 @_spi(Experimental) extension GenericParameterClauseSyntax: GenericParameterScopeSyntax {
   /// Generic parameter names introduced by this clause.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     parameters.children(viewMode: .fixedUp).flatMap { child in
       LookupName.getNames(from: child)
     }
@@ -587,7 +591,7 @@ import SwiftSyntax
 @_spi(Experimental)
 extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveResultsLaterScopeSyntax {
   /// Parameters introduced by this subscript and possibly `self` keyword.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     let parameters = parameterClause.parameters.flatMap { parameter in
       LookupName.getNames(from: parameter)
     }
@@ -666,7 +670,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
 @_spi(Experimental) extension AccessorBlockSyntax: SequentialScopeSyntax, CanInterleaveResultsLaterScopeSyntax {
   /// Names from the accessors or
   /// getters of this accessor block scope.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     switch accessors {
     case .getter(let codeBlockItems):
       return codeBlockItems.flatMap { codeBlockItem in
@@ -723,7 +727,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
 
 @_spi(Experimental) extension TypeAliasDeclSyntax: WithGenericParametersScopeSyntax {
   /// Type alias doesn't introduce any names to it's children.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 
@@ -736,7 +740,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
   /// Variable decl scope doesn't introduce any
   /// names unless it is a member and is looked
   /// up from inside it's accessor block.
-  @_spi(Experimental) public var introducedNames: [LookupName] {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     []
   }
 
