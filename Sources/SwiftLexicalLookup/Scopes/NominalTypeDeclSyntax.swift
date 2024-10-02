@@ -12,7 +12,7 @@
 
 import SwiftSyntax
 
-protocol NominalTypeDeclSyntax: LookInMembersScopeSyntax, NamedDeclSyntax, WithGenericParametersScopeSyntax {
+@_spi(Experimental) public protocol NominalTypeDeclSyntax: LookInMembersScopeSyntax, NamedDeclSyntax, WithGenericParametersScopeSyntax {
   var genericParameterClause: GenericParameterClauseSyntax? { get }
   var genericWhereClause: GenericWhereClauseSyntax? { get }
   var inheritanceClause: InheritanceClauseSyntax? { get }
@@ -30,7 +30,7 @@ extension NominalTypeDeclSyntax {
 
   /// Function used by generic parameter clause
   /// scope on return from it's lookup.
-  func returningLookupFromGenericParameterScope(
+  @_spi(Experimental) public func returningLookupFromGenericParameterScope(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig

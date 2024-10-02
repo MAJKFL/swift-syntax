@@ -12,9 +12,9 @@
 
 import SwiftSyntax
 
-protocol FunctionScopeSyntax: DeclSyntaxProtocol, WithGenericParametersScopeSyntax {
+@_spi(Experimental) public protocol FunctionScopeSyntax: DeclSyntaxProtocol, WithGenericParametersScopeSyntax {
   var signature: FunctionSignatureSyntax { get }
-  var genericWhereClause: GenericWhereClauseSyntax? { get }
+  var body: CodeBlockSyntax? { get }
 }
 
 extension FunctionScopeSyntax {
@@ -34,7 +34,7 @@ extension FunctionScopeSyntax {
   ) -> [LookupResult] {
     var thisScopeResults: [LookupResult] = []
 
-    if !signature.range.contains(lookUpPosition) && !(genericWhereClause?.range.contains(lookUpPosition) ?? false) {
+    if body?.range.contains(lookUpPosition) ?? false {
       thisScopeResults = defaultLookupImplementation(
         identifier,
         at: position,
