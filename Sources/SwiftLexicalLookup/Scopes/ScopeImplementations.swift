@@ -39,6 +39,25 @@ import SwiftSyntax
   @_spi(Experimental) public var scopeDebugName: String {
     "FileScope"
   }
+
+  /// In file scope, introduce only from `guard`.
+  @_spi(Experimental) public func lookup(
+    _ identifier: Identifier?,
+    at lookUpPosition: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    return statements.flatMap { codeBlockItem in
+      if let guardStmt = codeBlockItem.item.as(GuardStmtSyntax.self) {
+        return guardStmt.lookupFromSequentialParent(
+          identifier,
+          at: lookUpPosition,
+          with: config
+        )
+      } else {
+        return []
+      }
+    }
+  }
 }
 
 @_spi(Experimental) extension CodeBlockSyntax: SequentialScopeSyntax {
@@ -545,9 +564,10 @@ import SwiftSyntax
     }
 
     let lookInMembers: [LookupResult]
-    
-    if !(inheritanceClause?.range.contains(lookUpPosition) ?? false) &&
-        !(genericWhereClause?.range.contains(lookUpPosition) ?? false) {
+
+    if !(inheritanceClause?.range.contains(lookUpPosition) ?? false)
+      && !(genericWhereClause?.range.contains(lookUpPosition) ?? false)
+    {
       lookInMembers = [.lookInMembers(self)]
     } else {
       lookInMembers = []

@@ -17,6 +17,12 @@ public struct Identifier: Equatable, Hashable, Sendable {
     String(syntaxText: raw.name)
   }
 
+  public var dollarIdentifierNumber: Int? {
+    guard name.first == "$" else { return nil }
+
+    return Int(name.dropFirst())
+  }
+
   @_spi(RawSyntax)
   public let raw: RawIdentifier
   private let arena: SyntaxArenaRef?

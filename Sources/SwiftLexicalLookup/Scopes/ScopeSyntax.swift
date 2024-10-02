@@ -96,7 +96,7 @@ extension SyntaxProtocol {
     propagateToParent: Bool = true
   ) -> [LookupResult] {
     let filteredNames =
-    (names ?? defaultIntroducedNames)
+      (names ?? defaultIntroducedNames)
       .filter { introducedName in
         checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
       }
