@@ -97,8 +97,6 @@ func assertLexicalNameLookup(
 
       let result = tokenAtMarker.lookup(useNilAsTheParameter ? nil : lookupIdentifier, with: config)
 
-      print("\n" + result.debugDescription + "\n")
-
       guard let expectedValues = references[marker] else {
         XCTFail("For marker \(marker), couldn't find result expectation")
         return []

@@ -135,6 +135,31 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
+  
+  func testDollarIdentifiers() {
+    assertLexicalNameLookup(
+      source: """
+        func foo() {
+          let 0️⃣a = 1
+          let x = 5️⃣{
+            print(2️⃣a, 3️⃣$0, 4️⃣$123)
+          }
+        }
+        """,
+      references: [
+        "2️⃣": [
+          .mightIntroduceDollarIdentifiers,
+          .fromScope(CodeBlockSyntax.self, expectedNames: ["0️⃣"]),
+        ],
+        "3️⃣": [
+          .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.dollarIdentifier("5️⃣", "$0")]),
+        ],
+        "4️⃣": [
+          .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.dollarIdentifier("5️⃣", "$123")]),
+        ],
+      ]
+    )
+  }
 
   func testClosureCaptureLookup() {
     assertLexicalNameLookup(
@@ -152,16 +177,19 @@ final class testNameLookup: XCTestCase {
       references: [
         "5️⃣": [
           .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.identifier("2️⃣")]),
+          .mightIntroduceDollarIdentifiers,
           .fromScope(FunctionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("9️⃣"))]),
           .lookInMembers(ClassDeclSyntax.self),
         ],
         "6️⃣": [
           .fromScope(ClosureExprSyntax.self, expectedNames: ["3️⃣"]),
+          .mightIntroduceDollarIdentifiers,
           .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
           .lookInMembers(ClassDeclSyntax.self),
         ],
         "8️⃣": [
           .fromScope(ClosureExprSyntax.self, expectedNames: ["4️⃣"]),
+          .mightIntroduceDollarIdentifiers,
           .lookInMembers(ClassDeclSyntax.self),
         ],
       ],

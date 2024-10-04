@@ -120,7 +120,7 @@ extension SyntaxProtocol {
     refersTo introducedName: LookupName,
     at lookUpPosition: AbsolutePosition
   ) -> Bool {
-    introducedName.isAccessible(at: lookUpPosition) && (identifier == nil || introducedName.identifier == identifier!)
+    introducedName.isAccessible(at: lookUpPosition) && introducedName.refersTo(identifier)
   }
 
   /// Debug description of this scope.

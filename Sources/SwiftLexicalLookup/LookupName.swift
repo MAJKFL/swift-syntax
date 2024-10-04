@@ -110,6 +110,7 @@ import SwiftSyntax
   case declaration(NamedDeclSyntax)
   /// Name introduced implicitly by certain syntax nodes.
   case implicit(ImplicitDecl)
+  case dollarIdentifier(ClosureExprSyntax, strRepresentation: String)
 
   /// Syntax associated with this name.
   @_spi(Experimental) public var syntax: SyntaxProtocol {
@@ -120,6 +121,8 @@ import SwiftSyntax
       return syntax
     case .implicit(let implicitName):
       return implicitName.syntax
+    case .dollarIdentifier(let closureExpr, _):
+      return closureExpr
     }
   }
 
@@ -132,6 +135,8 @@ import SwiftSyntax
       return Identifier(syntax.name)
     case .implicit(let kind):
       return kind.identifier
+    case .dollarIdentifier(_, strRepresentation: _):
+      return nil
     }
   }
 
@@ -177,6 +182,8 @@ import SwiftSyntax
       default:
         return implicitName.syntax.positionAfterSkippingLeadingTrivia
       }
+    case .dollarIdentifier(let closureExpr, _):
+      return closureExpr.positionAfterSkippingLeadingTrivia
     }
   }
 
@@ -195,6 +202,17 @@ import SwiftSyntax
   func isAccessible(at lookUpPosition: AbsolutePosition) -> Bool {
     guard let accessibleAfter else { return true }
     return accessibleAfter <= lookUpPosition
+  }
+
+  func refersTo(_ otherIdentifier: Identifier?) -> Bool {
+    guard let otherIdentifier else { return true }
+
+    switch self {
+    case .dollarIdentifier(_, let strRepresentation):
+      return strRepresentation == otherIdentifier.name
+    default:
+      return identifier == otherIdentifier
+    }
   }
 
   /// Extracts names introduced by the given `syntax` structure.
@@ -294,6 +312,8 @@ import SwiftSyntax
       return "declaration: \(strName)"
     case .implicit:
       return "implicit: \(strName)"
+    case .dollarIdentifier(_, strRepresentation: let str):
+      return "dollarIdentifier: \(str)"
     }
   }
 }

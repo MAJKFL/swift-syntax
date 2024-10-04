@@ -114,25 +114,24 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension ClosureExprSyntax: SequentialScopeSyntax {
-  /// Names introduced in this closure's signature.
-  var introducedNamesInSignature: [LookupName] {
-    let captureNames =
-      signature?.capture?.items.flatMap { element in
-        LookupName.getNames(from: element)
-      } ?? []
+  /// Closure capture names introduced in this closure expression.
+  var captureNames: [LookupName] {
+    signature?.capture?.items.flatMap { element in
+      LookupName.getNames(from: element)
+    } ?? []
+  }
 
-    let parameterNames =
-      signature?.parameterClause?.children(viewMode: .sourceAccurate).flatMap { parameter in
-        if let parameterList = parameter.as(ClosureParameterListSyntax.self) {
-          return parameterList.children(viewMode: .sourceAccurate).flatMap { parameter in
-            LookupName.getNames(from: parameter)
-          }
-        } else {
-          return LookupName.getNames(from: parameter)
+  /// Parameter names introduced in this closure expression.
+  var parameterNames: [LookupName] {
+    signature?.parameterClause?.children(viewMode: .sourceAccurate).flatMap { parameter in
+      if let parameterList = parameter.as(ClosureParameterListSyntax.self) {
+        return parameterList.children(viewMode: .sourceAccurate).flatMap { parameter in
+          LookupName.getNames(from: parameter)
         }
-      } ?? []
-
-    return captureNames + parameterNames
+      } else {
+        return LookupName.getNames(from: parameter)
+      }
+    } ?? []
   }
 
   /// Names introduced sequentially in body.
@@ -142,8 +141,9 @@ import SwiftSyntax
     }
   }
 
+  /// Capture, parameter and body names introduced in this scope.
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
-    introducedNamesInSignature + introducedNamesInBody
+    captureNames + parameterNames + introducedNamesInBody
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
@@ -169,27 +169,45 @@ import SwiftSyntax
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig
   ) -> [LookupResult] {
-    let filteredSignatureNames: [LookupName]
-
-    if let signature, signature.range.contains(lookUpPosition) {
-      filteredSignatureNames = []
-    } else {
-      filteredSignatureNames = introducedNamesInSignature.filter { name in
-        checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
-      }
-    }
-
-    return sequentialLookup(
+    let sequentialResults = sequentialLookup(
       in: statements,
       identifier,
       at: lookUpPosition,
       with: config,
       propagateToParent: false
     )
-      + (config.finishInSequentialScope
-        ? []
-        : (filteredSignatureNames.isEmpty ? [] : [.fromScope(self, withNames: filteredSignatureNames)])
-          + lookupInParent(identifier, at: lookUpPosition, with: config))
+
+    guard !config.finishInSequentialScope else { return sequentialResults }
+
+    let signatureResults: [LookupResult]
+
+    if signature?.range.contains(lookUpPosition) ?? false {
+      signatureResults = []
+    } else if parameterNames.isEmpty {
+      let filteredCaptureNames = captureNames.filter { name in
+        checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
+      }
+
+      if let dollarIdentifierStr = identifier?.dollarIdentifierStr {
+        signatureResults = LookupResult.getResultArray(
+          for: self,
+          withNames: filteredCaptureNames + [LookupName.dollarIdentifier(self, strRepresentation: dollarIdentifierStr)]
+        )
+      } else {
+        signatureResults =
+          LookupResult.getResultArray(for: self, withNames: filteredCaptureNames)
+          + [.mightIntroduceDollarIdentifiers(self)]
+      }
+    } else {
+      signatureResults = LookupResult.getResultArray(
+        for: self,
+        withNames: (captureNames + parameterNames).filter { name in
+          checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
+        }
+      )
+    }
+
+    return sequentialResults + signatureResults + lookupInParent(identifier, at: lookUpPosition, with: config)
   }
 }
 
@@ -394,9 +412,9 @@ import SwiftSyntax
           checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
         }
 
-      return (implicitSelf.isEmpty ? [] : [.fromScope(self, withNames: implicitSelf)]) + [
-        .lookInGenericParametersOfExtendedType(self)
-      ] + [.lookInMembers(self)]
+      return (implicitSelf.isEmpty ? [] : [.fromScope(self, withNames: implicitSelf)])
+        + (genericWhereClause == nil ? [] : [.lookInGenericParametersOfExtendedType(self)])
+        + [.lookInMembers(self)]
         + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
     } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
       if isInRightTypeInGenericWhereClause(lookUpPosition, genericWhereClause: genericWhereClause) {
