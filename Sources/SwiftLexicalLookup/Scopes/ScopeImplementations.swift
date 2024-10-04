@@ -185,8 +185,11 @@ import SwiftSyntax
       at: lookUpPosition,
       with: config,
       propagateToParent: false
-    ) + (filteredSignatureNames.isEmpty ? [] : [.fromScope(self, withNames: filteredSignatureNames)])
-      + (config.finishInSequentialScope ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
+    )
+      + (config.finishInSequentialScope
+        ? []
+        : (filteredSignatureNames.isEmpty ? [] : [.fromScope(self, withNames: filteredSignatureNames)])
+          + lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }
 
@@ -391,10 +394,33 @@ import SwiftSyntax
           checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
         }
 
-      return (implicitSelf.isEmpty ? [] : [.fromScope(self, withNames: implicitSelf)]) + [.lookInMembers(self)]
+      return (implicitSelf.isEmpty ? [] : [.fromScope(self, withNames: implicitSelf)]) + [
+        .lookInGenericParametersOfExtendedType(self)
+      ] + [.lookInMembers(self)]
         + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
+    } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
+      if isInRightTypeInGenericWhereClause(lookUpPosition, genericWhereClause: genericWhereClause) {
+        return [.lookInGenericParametersOfExtendedType(self)] + [.lookInMembers(self)]
+          + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
+      } else {
+        return [.lookInGenericParametersOfExtendedType(self)]
+          + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
+      }
     } else {
       return defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
+    }
+  }
+
+  private func isInRightTypeInGenericWhereClause(
+    _ checkedPosition: AbsolutePosition,
+    genericWhereClause: GenericWhereClauseSyntax
+  ) -> Bool {
+    genericWhereClause.requirements.contains { elem in
+      if let conformanceRequirement = elem.requirement.as(ConformanceRequirementSyntax.self) {
+        return conformanceRequirement.rightType.range.contains(checkedPosition)
+      } else {
+        return false
+      }
     }
   }
 }

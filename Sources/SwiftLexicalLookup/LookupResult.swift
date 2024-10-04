@@ -20,6 +20,8 @@ import SwiftSyntax
   case fromFileScope(SourceFileSyntax, withNames: [LookupName])
   /// Indicates where to perform member lookup.
   case lookInMembers(LookInMembersScopeSyntax)
+  /// Indicates to lookup generic parameters of extended type.
+  case lookInGenericParametersOfExtendedType(ExtensionDeclSyntax)
 
   /// Associated scope.
   @_spi(Experimental) public var scope: ScopeSyntax {
@@ -30,6 +32,8 @@ import SwiftSyntax
       return fileScopeSyntax
     case .lookInMembers(let lookInMemb):
       return lookInMemb
+    case .lookInGenericParametersOfExtendedType(let extensionDecl):
+      return extensionDecl
     }
   }
 
@@ -39,6 +43,8 @@ import SwiftSyntax
     case .fromScope(_, let names), .fromFileScope(_, let names):
       return names
     case .lookInMembers(_):
+      return []
+    case .lookInGenericParametersOfExtendedType(_):
       return []
     }
   }
@@ -87,6 +93,8 @@ import SwiftSyntax
       return "fromFileScope"
     case .lookInMembers:
       return "lookInMembers"
+    case .lookInGenericParametersOfExtendedType(_):
+      return "lookInGenericParametersOfExtendedType"
     }
   }
 }
