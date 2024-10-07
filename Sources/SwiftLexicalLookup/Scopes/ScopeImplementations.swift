@@ -394,13 +394,14 @@ import SwiftSyntax
   }
 
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
-    if genericWhereClause == nil,
-       let identifierType = extendedType.as(IdentifierTypeSyntax.self),
-       identifierType.name.text == "Array" {
-      return [.implicit(.element(self))]
-    } else {
-      return []
-    }
+//    if genericWhereClause == nil,
+//       let identifierType = extendedType.as(IdentifierTypeSyntax.self),
+//       identifierType.name.text == "Array" {
+//      return [.implicit(.element(self))]
+//    } else {
+//      return []
+//    }
+    []
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
@@ -419,12 +420,12 @@ import SwiftSyntax
         }
 
       return LookupResult.getResultArray(for: self, withNames: implicitSelf)
-        + (genericWhereClause == nil ? [] : [.lookInGenericParametersOfExtendedType(self)])
+        + [.lookInGenericParametersOfExtendedType(self)]
         + defaultLookupImplementation(identifier, at: lookUpPosition, with: config, propagateToParent: false)
         + [.lookInMembers(self)]
         + lookupInParent(identifier, at: lookUpPosition, with: config)
     } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
-      if isInRightTypeInGenericWhereClause(lookUpPosition, genericWhereClause: genericWhereClause) {
+      if shouldIncludeLookInMembersFromGenericWhereClause(lookUpPosition, genericWhereClause: genericWhereClause) {
         return [.lookInGenericParametersOfExtendedType(self)] + [.lookInMembers(self)]
           + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
       } else {
@@ -432,11 +433,11 @@ import SwiftSyntax
           + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
       }
     } else {
-      return lookupInParent(identifier, at: lookUpPosition, with: config)
+      return [.lookInGenericParametersOfExtendedType(self)] + lookupInParent(identifier, at: lookUpPosition, with: config)
     }
   }
 
-  private func isInRightTypeInGenericWhereClause(
+  private func shouldIncludeLookInMembersFromGenericWhereClause(
     _ checkedPosition: AbsolutePosition,
     genericWhereClause: GenericWhereClauseSyntax
   ) -> Bool {
@@ -445,7 +446,7 @@ import SwiftSyntax
       case .conformanceRequirement(let conformanceRequirement):
         return conformanceRequirement.rightType.range.contains(checkedPosition)
       case .sameTypeRequirement(let sameTypeRequirement):
-        return sameTypeRequirement.rightType.range.contains(checkedPosition)
+        return sameTypeRequirement.range.contains(checkedPosition)
       default:
         return false
       }
@@ -513,11 +514,45 @@ import SwiftSyntax
 @_spi(Experimental) extension CatchClauseSyntax: ScopeSyntax {
   /// Implicit `error` when there are no catch items.
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
-    return catchItems.isEmpty ? [.implicit(.error(self))] : []
+    let extractedNames = catchItems.flatMap { item in
+      guard let pattern = item.pattern else { return [LookupName]() }
+      
+      return LookupName.getNames(from: pattern)
+    }
+    
+    return extractedNames.isEmpty ? [.implicit(.error(self))] : extractedNames
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
     "CatchClauseScope"
+  }
+  
+  @_spi(Experimental) public func lookup(
+    _ identifier: Identifier?,
+    at lookUpPosition: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    if body.range.contains(lookUpPosition) || isLookupFromWhereClause(lookUpPosition) {
+      return defaultLookupImplementation(
+        identifier,
+        at: lookUpPosition,
+        with: config
+      )
+    } else {
+      return lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config
+      )
+    }
+  }
+  
+  func isLookupFromWhereClause(
+    _ checkedPosition: AbsolutePosition
+  ) -> Bool {
+    catchItems.contains { item in
+      item.whereClause?.range.contains(checkedPosition) ?? false
+    }
   }
 }
 
