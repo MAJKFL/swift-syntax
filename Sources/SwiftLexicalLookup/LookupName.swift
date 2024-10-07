@@ -28,6 +28,8 @@ import SwiftSyntax
   case newValue(AccessorDeclSyntax)
   /// `oldValue` available by default inside `didSet`.
   case oldValue(AccessorDeclSyntax)
+  /// Generic parameter `Element` associated with extensions of arrays.
+  case element(ExtensionDeclSyntax)
 
   /// Syntax associated with this name.
   @_spi(Experimental) public var syntax: SyntaxProtocol {
@@ -42,11 +44,13 @@ import SwiftSyntax
       return syntax
     case .oldValue(let syntax):
       return syntax
+    case .element(let syntax):
+      return syntax
     }
   }
 
   /// The name of the implicit declaration.
-  private var name: String {
+  private var name: StaticString {
     switch self {
     case .self:
       return "self"
@@ -58,6 +62,8 @@ import SwiftSyntax
       return "newValue"
     case .oldValue:
       return "oldValue"
+    case .element:
+      return "Element"
     }
   }
 
@@ -86,17 +92,40 @@ import SwiftSyntax
   /// `self` and `Self` identifers override implicit `self` and `Self` introduced by
   /// the `Foo` class declaration.
   var identifier: Identifier {
+    Identifier(name)
+  }
+  
+  /// Position of this implicit name.
+  @_spi(Experimental) public var position: AbsolutePosition {
     switch self {
-    case .self:
-      return Identifier("self")
-    case .Self:
-      return Identifier("Self")
-    case .error:
-      return Identifier("error")
-    case .newValue:
-      return Identifier("newValue")
-    case .oldValue:
-      return Identifier("oldValue")
+    case .self(let declSyntax):
+      switch Syntax(declSyntax).as(SyntaxEnum.self) {
+      case .functionDecl(let functionDecl):
+        return functionDecl.name.positionAfterSkippingLeadingTrivia
+      case .initializerDecl(let initializerDecl):
+        return initializerDecl.initKeyword.positionAfterSkippingLeadingTrivia
+      case .subscriptDecl(let subscriptDecl):
+        return subscriptDecl.accessorBlock?.positionAfterSkippingLeadingTrivia
+          ?? subscriptDecl.endPositionBeforeTrailingTrivia
+      case .variableDecl(let variableDecl):
+        return variableDecl.bindings.first?.accessorBlock?.positionAfterSkippingLeadingTrivia
+          ?? variableDecl.endPosition
+      default:
+        return declSyntax.positionAfterSkippingLeadingTrivia
+      }
+    case .Self(let declSyntax):
+      switch Syntax(declSyntax).as(SyntaxEnum.self) {
+      case .protocolDecl(let protocolDecl):
+        return protocolDecl.name.positionAfterSkippingLeadingTrivia
+      default:
+        return declSyntax.positionAfterSkippingLeadingTrivia
+      }
+    case .error(let catchClause):
+      return catchClause.body.positionAfterSkippingLeadingTrivia
+    case .element(let extensionDecl):
+      return extensionDecl.extensionKeyword.positionAfterSkippingLeadingTrivia
+    default:
+      return syntax.positionAfterSkippingLeadingTrivia
     }
   }
 }
@@ -154,34 +183,7 @@ import SwiftSyntax
     case .declaration(let syntax):
       return syntax.name.positionAfterSkippingLeadingTrivia
     case .implicit(let implicitName):
-      switch implicitName {
-      case .self(let declSyntax):
-        switch Syntax(declSyntax).as(SyntaxEnum.self) {
-        case .functionDecl(let functionDecl):
-          return functionDecl.name.positionAfterSkippingLeadingTrivia
-        case .initializerDecl(let initializerDecl):
-          return initializerDecl.initKeyword.positionAfterSkippingLeadingTrivia
-        case .subscriptDecl(let subscriptDecl):
-          return subscriptDecl.accessorBlock?.positionAfterSkippingLeadingTrivia
-            ?? subscriptDecl.endPositionBeforeTrailingTrivia
-        case .variableDecl(let variableDecl):
-          return variableDecl.bindings.first?.accessorBlock?.positionAfterSkippingLeadingTrivia
-            ?? variableDecl.endPosition
-        default:
-          return declSyntax.positionAfterSkippingLeadingTrivia
-        }
-      case .Self(let declSyntax):
-        switch Syntax(declSyntax).as(SyntaxEnum.self) {
-        case .protocolDecl(let protocolDecl):
-          return protocolDecl.name.positionAfterSkippingLeadingTrivia
-        default:
-          return declSyntax.positionAfterSkippingLeadingTrivia
-        }
-      case .error(let catchClause):
-        return catchClause.body.positionAfterSkippingLeadingTrivia
-      default:
-        return implicitName.syntax.positionAfterSkippingLeadingTrivia
-      }
+      return implicitName.position
     case .dollarIdentifier(let closureExpr, _):
       return closureExpr.positionAfterSkippingLeadingTrivia
     }

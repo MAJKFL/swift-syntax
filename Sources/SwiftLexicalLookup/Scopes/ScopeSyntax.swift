@@ -101,9 +101,8 @@ extension SyntaxProtocol {
         checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
       }
 
-    let fromThisScope = filteredNames.isEmpty ? [] : [LookupResult.fromScope(self, withNames: filteredNames)]
-
-    return fromThisScope + (propagateToParent ? lookupInParent(identifier, at: lookUpPosition, with: config) : [])
+    return LookupResult.getResultArray(for: self, withNames: filteredNames)
+    + (propagateToParent ? lookupInParent(identifier, at: lookUpPosition, with: config) : [])
   }
 
   /// Looks up in parent scope.

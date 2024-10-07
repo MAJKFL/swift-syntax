@@ -322,7 +322,7 @@ import SwiftSyntax
       checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
     }
 
-    return filteredNames.isEmpty ? [] : [.fromScope(self, withNames: filteredNames)]
+    return LookupResult.getResultArray(for: self, withNames: filteredNames)
   }
 }
 
@@ -360,11 +360,11 @@ import SwiftSyntax
   ) -> [LookupResult] {
     guard !body.range.contains(lookUpPosition) else { return [] }
 
-    let names = namesIntroducedToSequentialParent.filter { introducedName in
+    let filteredNames = namesIntroducedToSequentialParent.filter { introducedName in
       checkIdentifier(identifier, refersTo: introducedName, at: lookUpPosition)
     }
 
-    return names.isEmpty ? [] : [.fromScope(self, withNames: names)]
+    return LookupResult.getResultArray(for: self, withNames: filteredNames)
   }
 }
 
@@ -394,7 +394,13 @@ import SwiftSyntax
   }
 
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
-    []
+    if genericWhereClause == nil,
+       let identifierType = extendedType.as(IdentifierTypeSyntax.self),
+       identifierType.name.text == "Array" {
+      return [.implicit(.element(self))]
+    } else {
+      return []
+    }
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
@@ -412,10 +418,11 @@ import SwiftSyntax
           checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
         }
 
-      return (implicitSelf.isEmpty ? [] : [.fromScope(self, withNames: implicitSelf)])
+      return LookupResult.getResultArray(for: self, withNames: implicitSelf)
         + (genericWhereClause == nil ? [] : [.lookInGenericParametersOfExtendedType(self)])
+        + defaultLookupImplementation(identifier, at: lookUpPosition, with: config, propagateToParent: false)
         + [.lookInMembers(self)]
-        + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
+        + lookupInParent(identifier, at: lookUpPosition, with: config)
     } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
       if isInRightTypeInGenericWhereClause(lookUpPosition, genericWhereClause: genericWhereClause) {
         return [.lookInGenericParametersOfExtendedType(self)] + [.lookInMembers(self)]
@@ -425,7 +432,7 @@ import SwiftSyntax
           + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
       }
     } else {
-      return defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
+      return lookupInParent(identifier, at: lookUpPosition, with: config)
     }
   }
 
@@ -434,9 +441,12 @@ import SwiftSyntax
     genericWhereClause: GenericWhereClauseSyntax
   ) -> Bool {
     genericWhereClause.requirements.contains { elem in
-      if let conformanceRequirement = elem.requirement.as(ConformanceRequirementSyntax.self) {
+      switch Syntax(elem.requirement).as(SyntaxEnum.self) {
+      case .conformanceRequirement(let conformanceRequirement):
         return conformanceRequirement.rightType.range.contains(checkedPosition)
-      } else {
+      case .sameTypeRequirement(let sameTypeRequirement):
+        return sameTypeRequirement.rightType.range.contains(checkedPosition)
+      default:
         return false
       }
     }
@@ -553,7 +563,7 @@ import SwiftSyntax
       at: lookUpPosition,
       with: config,
       propagateToParent: false
-    ) + (filteredNamesFromLabel.isEmpty ? [] : [.fromScope(self, withNames: filteredNamesFromLabel)])
+    ) + LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel)
       + (config.finishInSequentialScope ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }
@@ -609,9 +619,7 @@ import SwiftSyntax
 
     let lookInMembers: [LookupResult]
 
-    if !(inheritanceClause?.range.contains(lookUpPosition) ?? false)
-      && !(genericWhereClause?.range.contains(lookUpPosition) ?? false)
-    {
+    if !(inheritanceClause?.range.contains(lookUpPosition) ?? false) {
       lookInMembers = [.lookInMembers(self)]
     } else {
       lookInMembers = []
