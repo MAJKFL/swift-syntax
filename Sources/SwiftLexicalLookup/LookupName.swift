@@ -131,6 +131,7 @@ import SwiftSyntax
   case declaration(NamedDeclSyntax)
   /// Name introduced implicitly by certain syntax nodes.
   case implicit(ImplicitDecl)
+  /// Dollar identifier introduced by a closure without parameters.
   case dollarIdentifier(ClosureExprSyntax, strRepresentation: String)
 
   /// Syntax associated with this name.
