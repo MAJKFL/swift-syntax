@@ -28,8 +28,6 @@ import SwiftSyntax
   case newValue(AccessorDeclSyntax)
   /// `oldValue` available by default inside `didSet`.
   case oldValue(AccessorDeclSyntax)
-  //  /// Generic parameter `Element` associated with extensions of arrays.
-  //  case element(ExtensionDeclSyntax)
 
   /// Syntax associated with this name.
   @_spi(Experimental) public var syntax: SyntaxProtocol {
@@ -60,8 +58,6 @@ import SwiftSyntax
       return "newValue"
     case .oldValue:
       return "oldValue"
-    //    case .element:
-    //      return "Element"
     }
   }
 
