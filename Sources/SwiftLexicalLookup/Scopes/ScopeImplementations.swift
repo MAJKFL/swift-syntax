@@ -327,6 +327,7 @@ import SwiftSyntax
 }
 
 @_spi(Experimental) extension GuardStmtSyntax: IntroducingToSequentialParentScopeSyntax {
+  /// Names introduced in `guard` conditions to the sequential parent.
   var namesIntroducedToSequentialParent: [LookupName] {
     conditions.reversed().flatMap { element in
       LookupName.getNames(from: element.condition, accessibleAfter: element.endPosition)
@@ -394,13 +395,6 @@ import SwiftSyntax
   }
 
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
-//    if genericWhereClause == nil,
-//       let identifierType = extendedType.as(IdentifierTypeSyntax.self),
-//       identifierType.name.text == "Array" {
-//      return [.implicit(.element(self))]
-//    } else {
-//      return []
-//    }
     []
   }
 
@@ -408,6 +402,8 @@ import SwiftSyntax
     "ExtensionDeclScope"
   }
 
+  /// Returns results matching lookup, including implicit `Self`,
+  /// `lookInGenericParametersOfExtendedType` and `lookInMembers` depending on `lookupPosition`.
   @_spi(Experimental) public func lookup(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
@@ -424,8 +420,8 @@ import SwiftSyntax
         + defaultLookupImplementation(identifier, at: lookUpPosition, with: config, propagateToParent: false)
         + [.lookInMembers(self)]
         + lookupInParent(identifier, at: lookUpPosition, with: config)
-    } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
-      if shouldIncludeLookInMembersFromGenericWhereClause(lookUpPosition, genericWhereClause: genericWhereClause) {
+    } else if !extendedType.range.contains(lookUpPosition) && genericWhereClause != nil {
+      if inRightTypeOrSameTypeRequirement(lookUpPosition) {
         return [.lookInGenericParametersOfExtendedType(self)] + [.lookInMembers(self)]
           + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
       } else {
@@ -433,15 +429,17 @@ import SwiftSyntax
           + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
       }
     } else {
-      return [.lookInGenericParametersOfExtendedType(self)] + lookupInParent(identifier, at: lookUpPosition, with: config)
+      return [.lookInGenericParametersOfExtendedType(self)]
+        + lookupInParent(identifier, at: lookUpPosition, with: config)
     }
   }
 
-  private func shouldIncludeLookInMembersFromGenericWhereClause(
-    _ checkedPosition: AbsolutePosition,
-    genericWhereClause: GenericWhereClauseSyntax
+  /// Returns `true` if `checkedPosition` is a right type of a
+  /// conformance requirement or inside a same type requirement.
+  private func inRightTypeOrSameTypeRequirement(
+    _ checkedPosition: AbsolutePosition
   ) -> Bool {
-    genericWhereClause.requirements.contains { elem in
+    genericWhereClause?.requirements.contains { elem in
       switch Syntax(elem.requirement).as(SyntaxEnum.self) {
       case .conformanceRequirement(let conformanceRequirement):
         return conformanceRequirement.rightType.range.contains(checkedPosition)
@@ -450,7 +448,7 @@ import SwiftSyntax
       default:
         return false
       }
-    }
+    } ?? false
   }
 }
 
@@ -516,17 +514,19 @@ import SwiftSyntax
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     let extractedNames = catchItems.flatMap { item in
       guard let pattern = item.pattern else { return [LookupName]() }
-      
+
       return LookupName.getNames(from: pattern)
     }
-    
+
     return extractedNames.isEmpty ? [.implicit(.error(self))] : extractedNames
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
     "CatchClauseScope"
   }
-  
+
+  /// Returns results matching lookup. Includes names possibly introduced by this scope
+  /// if `lookupPosition` is either in body or one of the where clauses of catch items.
   @_spi(Experimental) public func lookup(
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
@@ -546,7 +546,9 @@ import SwiftSyntax
       )
     }
   }
-  
+
+  /// Returns `true` if `checkedPosition` is in one
+  /// of the catch items' where clauses and `false` otherwise.
   func isLookupFromWhereClause(
     _ checkedPosition: AbsolutePosition
   ) -> Bool {

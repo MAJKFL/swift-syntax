@@ -102,6 +102,8 @@ func assertLexicalNameLookup(
         return []
       }
 
+      print("\n" + result.debugDescription + "\n")
+
       ResultExpectation.assertResult(marker: marker, result: result, expectedValues: expectedValues)
 
       return result.flatMap { lookUpResult in

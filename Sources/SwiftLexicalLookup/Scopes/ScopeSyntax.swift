@@ -102,7 +102,7 @@ extension SyntaxProtocol {
       }
 
     return LookupResult.getResultArray(for: self, withNames: filteredNames)
-    + (propagateToParent ? lookupInParent(identifier, at: lookUpPosition, with: config) : [])
+      + (propagateToParent ? lookupInParent(identifier, at: lookUpPosition, with: config) : [])
   }
 
   /// Looks up in parent scope.

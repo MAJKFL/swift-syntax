@@ -28,8 +28,8 @@ import SwiftSyntax
   case newValue(AccessorDeclSyntax)
   /// `oldValue` available by default inside `didSet`.
   case oldValue(AccessorDeclSyntax)
-//  /// Generic parameter `Element` associated with extensions of arrays.
-//  case element(ExtensionDeclSyntax)
+  //  /// Generic parameter `Element` associated with extensions of arrays.
+  //  case element(ExtensionDeclSyntax)
 
   /// Syntax associated with this name.
   @_spi(Experimental) public var syntax: SyntaxProtocol {
@@ -44,8 +44,6 @@ import SwiftSyntax
       return syntax
     case .oldValue(let syntax):
       return syntax
-//    case .element(let syntax):
-//      return syntax
     }
   }
 
@@ -62,8 +60,8 @@ import SwiftSyntax
       return "newValue"
     case .oldValue:
       return "oldValue"
-//    case .element:
-//      return "Element"
+    //    case .element:
+    //      return "Element"
     }
   }
 
@@ -94,7 +92,7 @@ import SwiftSyntax
   var identifier: Identifier {
     Identifier(name)
   }
-  
+
   /// Position of this implicit name.
   @_spi(Experimental) public var position: AbsolutePosition {
     switch self {
@@ -122,8 +120,6 @@ import SwiftSyntax
       }
     case .error(let catchClause):
       return catchClause.catchItems.positionAfterSkippingLeadingTrivia
-//    case .element(let extensionDecl):
-//      return extensionDecl.extensionKeyword.positionAfterSkippingLeadingTrivia
     default:
       return syntax.positionAfterSkippingLeadingTrivia
     }

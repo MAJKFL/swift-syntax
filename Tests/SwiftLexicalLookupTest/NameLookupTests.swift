@@ -135,7 +135,7 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
-  
+
   func testDollarIdentifiers() {
     assertLexicalNameLookup(
       source: """
@@ -152,10 +152,10 @@ final class testNameLookup: XCTestCase {
           .fromScope(CodeBlockSyntax.self, expectedNames: ["0️⃣"]),
         ],
         "3️⃣": [
-          .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.dollarIdentifier("5️⃣", "$0")]),
+          .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.dollarIdentifier("5️⃣", "$0")])
         ],
         "4️⃣": [
-          .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.dollarIdentifier("5️⃣", "$123")]),
+          .fromScope(ClosureExprSyntax.self, expectedNames: [NameExpectation.dollarIdentifier("5️⃣", "$123")])
         ],
       ]
     )
@@ -552,19 +552,23 @@ final class testNameLookup: XCTestCase {
         "3️⃣": [
           .lookInMembers(StructDeclSyntax.self),
           .fromScope(ExtensionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.Self("7️⃣"))]),
+          .lookInGenericParametersOfExtendedType,
           .lookInMembers(ExtensionDeclSyntax.self),
         ],
         "4️⃣": [
           .fromScope(FunctionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("2️⃣"))]),
           .lookInMembers(StructDeclSyntax.self),
+          .lookInGenericParametersOfExtendedType,
           .lookInMembers(ExtensionDeclSyntax.self),
         ],
         "5️⃣": [
           .fromScope(ExtensionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.Self("7️⃣"))]),
+          .lookInGenericParametersOfExtendedType,
           .lookInMembers(ExtensionDeclSyntax.self),
         ],
         "6️⃣": [
           .fromScope(FunctionDeclSyntax.self, expectedNames: [NameExpectation.implicit(.self("1️⃣"))]),
+          .lookInGenericParametersOfExtendedType,
           .lookInMembers(ExtensionDeclSyntax.self),
         ],
       ]
@@ -692,7 +696,7 @@ final class testNameLookup: XCTestCase {
           do {
             try x.bar()
             2️⃣error
-          } catch SomeError {
+          } 6️⃣catch SomeError {
             3️⃣error
           } 4️⃣catch {
             5️⃣error
@@ -701,7 +705,10 @@ final class testNameLookup: XCTestCase {
         """,
       references: [
         "2️⃣": [.fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.identifier("1️⃣")])],
-        "3️⃣": [.fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.identifier("1️⃣")])],
+        "3️⃣": [
+          .fromScope(CatchClauseSyntax.self, expectedNames: [NameExpectation.implicit(.error("6️⃣"))]),
+          .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.identifier("1️⃣")]),
+        ],
         "5️⃣": [
           .fromScope(CatchClauseSyntax.self, expectedNames: [NameExpectation.implicit(.error("4️⃣"))]),
           .fromScope(CodeBlockSyntax.self, expectedNames: [NameExpectation.identifier("1️⃣")]),
