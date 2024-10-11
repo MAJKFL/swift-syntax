@@ -391,7 +391,11 @@ import SwiftSyntax
 }
 @_spi(Experimental) extension ExtensionDeclSyntax: LookInMembersScopeSyntax {
   @_spi(Experimental) public var lookupMembersPosition: AbsolutePosition {
-    extendedType.position
+    if let memberType = extendedType.as(MemberTypeSyntax.self) {
+      return memberType.name.positionAfterSkippingLeadingTrivia
+    }
+    
+    return extendedType.positionAfterSkippingLeadingTrivia
   }
 
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
@@ -420,8 +424,8 @@ import SwiftSyntax
         + defaultLookupImplementation(identifier, at: lookUpPosition, with: config, propagateToParent: false)
         + [.lookInMembers(self)]
         + lookupInParent(identifier, at: lookUpPosition, with: config)
-    } else if !extendedType.range.contains(lookUpPosition) && genericWhereClause != nil {
-      if inRightTypeOrSameTypeRequirement(lookUpPosition) {
+    } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
+      if genericWhereClause.range.contains(lookUpPosition) {
         return [.lookInGenericParametersOfExtendedType(self)] + [.lookInMembers(self)]
           + defaultLookupImplementation(identifier, at: lookUpPosition, with: config)
       }
@@ -432,23 +436,6 @@ import SwiftSyntax
 
     return [.lookInGenericParametersOfExtendedType(self)]
       + lookupInParent(identifier, at: lookUpPosition, with: config)
-  }
-
-  /// Returns `true` if `checkedPosition` is a right type of a
-  /// conformance requirement or inside a same type requirement.
-  private func inRightTypeOrSameTypeRequirement(
-    _ checkedPosition: AbsolutePosition
-  ) -> Bool {
-    genericWhereClause?.requirements.contains { elem in
-      switch Syntax(elem.requirement).as(SyntaxEnum.self) {
-      case .conformanceRequirement(let conformanceRequirement):
-        return conformanceRequirement.rightType.range.contains(checkedPosition)
-      case .sameTypeRequirement(let sameTypeRequirement):
-        return sameTypeRequirement.range.contains(checkedPosition)
-      default:
-        return false
-      }
-    } ?? false
   }
 }
 
@@ -600,8 +587,10 @@ import SwiftSyntax
       at: lookUpPosition,
       with: config,
       propagateToParent: false
-    ) + LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel)
-      + (config.finishInSequentialScope ? [] : lookupInParent(identifier, at: lookUpPosition, with: config))
+    ) + (config.finishInSequentialScope ? [] :
+          LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel) +
+          lookupInParent(identifier, at: lookUpPosition, with: config)
+        )
   }
 }
 
@@ -758,7 +747,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
   ) -> [LookupResult] {
     var thisScopeResults: [LookupResult] = []
 
-    if !parameterClause.range.contains(lookUpPosition) && !returnClause.range.contains(lookUpPosition) {
+    if accessorBlock?.range.contains(lookUpPosition) ?? false {
       thisScopeResults = defaultLookupImplementation(
         identifier,
         at: position,
@@ -892,5 +881,15 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     }
 
     return resultsToInterleave + lookupInParent(identifier, at: lookUpPosition, with: config)
+  }
+}
+
+@_spi(Experimental) extension DeinitializerDeclSyntax: ScopeSyntax {
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
+    [.implicit(.self(self))]
+  }
+  
+  @_spi(Experimental) public var scopeDebugName: String {
+    "DeinitializerScope"
   }
 }
