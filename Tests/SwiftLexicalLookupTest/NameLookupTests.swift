@@ -1013,3 +1013,5 @@ final class testNameLookup: XCTestCase {
     )
   }
 }
+
+// TODO: Add IfConfigScope and MacroDeclScope tests

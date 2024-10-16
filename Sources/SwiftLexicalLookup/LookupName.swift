@@ -106,6 +106,8 @@ import SwiftSyntax
           ?? variableDecl.endPosition
       case .accessorDecl(let accessorDecl):
         return accessorDecl.accessorSpecifier.positionAfterSkippingLeadingTrivia
+      case .deinitializerDecl(let deinitializerDecl):
+        return deinitializerDecl.deinitKeyword.positionAfterSkippingLeadingTrivia
       default:
         return declSyntax.positionAfterSkippingLeadingTrivia
       }

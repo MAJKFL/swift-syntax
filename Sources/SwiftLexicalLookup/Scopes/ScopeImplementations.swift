@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+import SwiftIfConfig
 import SwiftSyntax
 
 @_spi(Experimental) extension SyntaxProtocol {
@@ -394,7 +395,7 @@ import SwiftSyntax
     if let memberType = extendedType.as(MemberTypeSyntax.self) {
       return memberType.name.positionAfterSkippingLeadingTrivia
     }
-    
+
     return extendedType.positionAfterSkippingLeadingTrivia
   }
 
@@ -478,7 +479,7 @@ import SwiftSyntax
 
     let implicitSelf: [LookupName] = [.implicit(.self(self))]
       .filter { name in
-        checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
+        checkIdentifier(identifier, refersTo: name, at: lookUpPosition) && !attributes.range.contains(lookUpPosition)
       }
 
     return defaultLookupImplementation(
@@ -499,13 +500,19 @@ import SwiftSyntax
 @_spi(Experimental) extension CatchClauseSyntax: ScopeSyntax {
   /// Implicit `error` when there are no catch items.
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
+    var containsExpressionSyntax = false
+
     let extractedNames = catchItems.flatMap { item in
       guard let pattern = item.pattern else { return [LookupName]() }
+
+      if !containsExpressionSyntax && pattern.is(ExpressionPatternSyntax.self) {
+        containsExpressionSyntax = true
+      }
 
       return LookupName.getNames(from: pattern)
     }
 
-    return extractedNames.isEmpty ? [.implicit(.error(self))] : extractedNames
+    return extractedNames.isEmpty && !containsExpressionSyntax ? [.implicit(.error(self))] : extractedNames
   }
 
   @_spi(Experimental) public var scopeDebugName: String {
@@ -587,10 +594,11 @@ import SwiftSyntax
       at: lookUpPosition,
       with: config,
       propagateToParent: false
-    ) + (config.finishInSequentialScope ? [] :
-          LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel) +
-          lookupInParent(identifier, at: lookUpPosition, with: config)
-        )
+    )
+      + (config.finishInSequentialScope
+        ? []
+        : LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel)
+          + lookupInParent(identifier, at: lookUpPosition, with: config))
   }
 }
 
@@ -683,6 +691,18 @@ import SwiftSyntax
 @_spi(Experimental) extension InitializerDeclSyntax: FunctionScopeSyntax {
   @_spi(Experimental) public var scopeDebugName: String {
     "InitializerDeclScope"
+  }
+}
+
+@_spi(Experimental) extension MacroDeclSyntax: WithGenericParametersScopeSyntax {
+  public var defaultIntroducedNames: [LookupName] {
+    signature.parameterClause.parameters.flatMap { parameter in
+      LookupName.getNames(from: parameter)
+    }
+  }
+
+  @_spi(Experimental) public var scopeDebugName: String {
+    "MacroDeclScope"
   }
 }
 
@@ -855,8 +875,6 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     with config: LookupConfig
   ) -> [LookupResult] {
     if bindings.first?.accessorBlock?.range.contains(lookUpPosition) ?? false {
-      let isMember = parentScope?.is(MemberBlockSyntax.self) ?? false
-
       return defaultLookupImplementation(
         in: (isMember ? [.implicit(.self(self))] : LookupName.getNames(from: self)),
         identifier,
@@ -876,7 +894,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     with config: LookupConfig,
     resultsToInterleave: [LookupResult]
   ) -> [LookupResult] {
-    guard parentScope?.is(MemberBlockSyntax.self) ?? false else {
+    guard isMember else {
       return lookup(identifier, at: lookUpPosition, with: config)
     }
 
@@ -888,8 +906,56 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
     [.implicit(.self(self))]
   }
-  
+
   @_spi(Experimental) public var scopeDebugName: String {
     "DeinitializerScope"
+  }
+}
+
+@_spi(Experimental) extension IfConfigDeclSyntax: IntroducingToSequentialParentScopeSyntax, SequentialScopeSyntax {
+  /// Names from all clauses.
+  var namesIntroducedToSequentialParent: [LookupName] {
+    clauses.flatMap { clause in
+      clause.elements.flatMap { element in
+        LookupName.getNames(from: element, accessibleAfter: element.endPosition)
+      } ?? []
+    }
+  }
+
+  /// Performs sequential lookup in the active clause.
+  /// Active clause is determined by the `BuildConfiguration`
+  /// inside `config`. If not specified, defaults to the `#else` clause.
+  func lookupFromSequentialParent(
+    _ identifier: Identifier?,
+    at lookUpPosition: AbsolutePosition,
+    with config: LookupConfig
+  ) -> [LookupResult] {
+    let clause: IfConfigClauseSyntax?
+
+    if let buildConfiguration = config.buildConfiguration {
+      (clause, _) = activeClause(in: buildConfiguration)
+    } else {
+      clause =
+        clauses
+        .first { clause in
+          clause.poundKeyword.tokenKind == .poundElse
+        }
+    }
+
+    return sequentialLookup(
+      in: clause?.elements?.as(CodeBlockItemListSyntax.self) ?? [],
+      identifier,
+      at: lookUpPosition,
+      with: config,
+      propagateToParent: false
+    )
+  }
+
+  @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {
+    []
+  }
+
+  @_spi(Experimental) public var scopeDebugName: String {
+    "IfConfigScope"
   }
 }
