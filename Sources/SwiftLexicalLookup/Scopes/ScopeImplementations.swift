@@ -588,17 +588,27 @@ import SwiftSyntax
       checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
     }
 
-    return sequentialLookup(
-      in: statements,
-      identifier,
-      at: lookUpPosition,
-      with: config,
-      propagateToParent: false
-    )
-      + (config.finishInSequentialScope
-        ? []
-        : LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel)
-          + lookupInParent(identifier, at: lookUpPosition, with: config))
+    if label.range.contains(lookUpPosition) {
+      return config.finishInSequentialScope ? [] : lookupInParent(identifier, at: lookUpPosition, with: config)
+    } else if config.finishInSequentialScope {
+      return sequentialLookup(
+        in: statements,
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        propagateToParent: false
+      )
+    } else {
+      return sequentialLookup(
+        in: statements,
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        propagateToParent: false
+      )
+        + LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel)
+        + lookupInParent(identifier, at: lookUpPosition, with: config)
+    }
   }
 }
 
@@ -947,8 +957,39 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
       identifier,
       at: lookUpPosition,
       with: config,
+      ignoreNamedDecl: true,
       propagateToParent: false
     )
+  }
+
+  /// Returns all `NamedDeclSyntax` nodes in the active clause specified
+  /// by `BuildConfiguration` in `config` from bottom-most to top-most.
+  func getNamedDecls(for config: LookupConfig) -> [NamedDeclSyntax] {
+    let clause: IfConfigClauseSyntax?
+
+    if let buildConfiguration = config.buildConfiguration {
+      (clause, _) = activeClause(in: buildConfiguration)
+    } else {
+      clause =
+        clauses
+        .first { clause in
+          clause.poundKeyword.tokenKind == .poundElse
+        }
+    }
+
+    guard let clauseElements = clause?.elements?.as(CodeBlockItemListSyntax.self) else { return [] }
+
+    var result: [NamedDeclSyntax] = []
+
+    for elem in clauseElements.reversed() {
+      if let namedDecl = elem.item.asProtocol(NamedDeclSyntax.self) {
+        result.append(namedDecl)
+      } else if let ifConfigDecl = elem.item.as(IfConfigDeclSyntax.self) {
+        result += ifConfigDecl.getNamedDecls(for: config)
+      }
+    }
+
+    return result
   }
 
   @_spi(Experimental) public var defaultIntroducedNames: [LookupName] {

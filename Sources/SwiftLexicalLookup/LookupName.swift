@@ -282,7 +282,11 @@ import SwiftSyntax
     identifiable: IdentifiableSyntax,
     accessibleAfter: AbsolutePosition? = nil
   ) -> [LookupName] {
-    [.identifier(identifiable, accessibleAfter: accessibleAfter)]
+    if case .wildcard = identifiable.identifier.tokenKind {
+      return []
+    }
+
+    return [.identifier(identifiable, accessibleAfter: accessibleAfter)]
   }
 
   /// Extracts name introduced by `NamedDeclSyntax` node.
