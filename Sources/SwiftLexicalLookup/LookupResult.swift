@@ -45,6 +45,8 @@ public enum LookupResult {
   /// When looking up for any identifier at the indicated position,
   /// the result will include `lookForImplicitClosureParameters`.
   case lookForImplicitClosureParameters(ClosureExprSyntax)
+  
+  case lookForMacroExpansionNames(scope: Syntax, macroExpansion: MacroExpansionExprSyntax)
 
   /// Associated scope.
   public var scope: SyntaxProtocol {
@@ -57,6 +59,8 @@ public enum LookupResult {
       return extensionDecl
     case .lookForImplicitClosureParameters(let closureExpr):
       return closureExpr
+    case .lookForMacroExpansionNames(let scope, _):
+      return scope
     }
   }
 
@@ -67,7 +71,8 @@ public enum LookupResult {
       return names
     case .lookForMembers(_),
       .lookForGenericParameters(_),
-      .lookForImplicitClosureParameters(_):
+      .lookForImplicitClosureParameters(_),
+      .lookForMacroExpansionNames(_, _):
       return []
     }
   }
@@ -117,6 +122,8 @@ public enum LookupResult {
       return "lookForGenericParameters"
     case .lookForImplicitClosureParameters(_):
       return "lookForImplicitClosureParameters"
+    case .lookForMacroExpansionNames(_, _):
+      return "lookForExpandedMacroNames"
     }
   }
 }

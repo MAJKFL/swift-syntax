@@ -20,6 +20,7 @@ enum ResultExpectation {
   case lookForMembers(LookInMembersScopeSyntax.Type)
   case lookForGenericParameters
   case lookForImplicitClosureParameters
+  case lookForMacroExpansionNames
 
   var expectedNames: [ExpectedName] {
     switch self {
@@ -27,7 +28,8 @@ enum ResultExpectation {
       return expectedNames
     case .lookForMembers,
       .lookForGenericParameters,
-      .lookForImplicitClosureParameters:
+      .lookForImplicitClosureParameters,
+      .lookForMacroExpansionNames:
       return []
     }
   }
@@ -42,6 +44,8 @@ enum ResultExpectation {
       return "lookForGenericParameters"
     case .lookForImplicitClosureParameters:
       return "lookForImplicitClosureParameters"
+    case .lookForMacroExpansionNames:
+      return "lookForMacroExpansionNames"
     }
   }
 
@@ -71,6 +75,8 @@ enum ResultExpectation {
       case (.lookForGenericParameters, .lookForGenericParameters):
         break
       case (.lookForImplicitClosureParameters, .lookForImplicitClosureParameters):
+        break
+      case (.lookForMacroExpansionNames, .lookForMacroExpansionNames):
         break
       default:
         XCTFail(

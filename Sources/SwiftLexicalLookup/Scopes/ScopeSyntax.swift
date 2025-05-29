@@ -48,10 +48,13 @@ extension SyntaxProtocol {
   public func lookup(
     _ identifier: Identifier?,
     with config: LookupConfig = LookupConfig(),
-    cache: LookupCache? = nil
+    cache: LookupCache? = nil,
+    macroExpansions: LookupMacroExpansions? = nil
   ) -> [LookupResult] {
+    let results: [LookupResult]
+    
     if let cache, let identifier {
-      let filteredResult: [LookupResult] = (scope?.lookup(nil, at: self.position, with: config, cache: cache) ?? [])
+      let filteredResult: [LookupResult] = (scope?.lookup(nil, at: self.position, with: config, cache: cache, macroExpansions: macroExpansions) ?? [])
         .compactMap { result in
           switch result {
           case .fromScope(let syntax, let withNames):
@@ -97,10 +100,14 @@ extension SyntaxProtocol {
         i += 1
       }
 
-      return resultWithMergedSequentialResults
+      results = resultWithMergedSequentialResults
     } else {
-      return scope?.lookup(identifier, at: self.position, with: config, cache: cache) ?? []
+      results = scope?.lookup(identifier, at: self.position, with: config, cache: cache, macroExpansions: macroExpansions) ?? []
     }
+    
+    macroExpansions?.resetIndex()
+    
+    return results
   }
 }
 
@@ -119,7 +126,8 @@ extension SyntaxProtocol {
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult]
 }
 
@@ -135,9 +143,10 @@ extension SyntaxProtocol {
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
-    defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache)
+    defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
   }
 
   /// Returns `LookupResult` of all names introduced in this scope that `identifier`
@@ -149,6 +158,7 @@ extension SyntaxProtocol {
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
     cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?,
     propagateToParent: Bool = true
   ) -> [LookupResult] {
     let filteredNames =
@@ -158,7 +168,13 @@ extension SyntaxProtocol {
       }
 
     return LookupResult.getResultArray(for: self, withNames: filteredNames)
-      + (propagateToParent ? lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache) : [])
+    + (propagateToParent ? lookupInParent(
+      identifier,
+      at: lookUpPosition,
+      with: config,
+      cache: cache,
+      macroExpansions: macroExpansions
+    ) : [])
   }
 
   /// Looks up in parent scope.
@@ -166,17 +182,18 @@ extension SyntaxProtocol {
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     guard !config.finishInSequentialScope else {
-      return parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache) ?? []
+      return parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions) ?? []
     }
 
     if let cachedAncestorResults = cache?.getCachedAncestorResults(id: id) {
       return cachedAncestorResults
     }
 
-    let ancestorResults = parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache) ?? []
+    let ancestorResults = parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions) ?? []
 
     if let cache {
       cache.setCachedAncestorResults(id: id, results: ancestorResults)

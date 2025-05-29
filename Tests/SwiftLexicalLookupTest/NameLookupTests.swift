@@ -1046,6 +1046,74 @@ final class testNameLookup: XCTestCase {
       )
     )
   }
+  
+  func testMacroNoSubstitution() {
+    let sameResult: [ResultExpectation] = [
+      .lookForMacroExpansionNames,
+      .fromScope(CodeBlockSyntax.self, expectedNames: ["2️⃣"]),
+      .lookForMacroExpansionNames,
+      .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
+    ]
+    
+    assertLexicalNameLookup(
+      source: """
+        func foo() {
+          let 1️⃣a = 42
+        
+          #myMacro()
+        
+          let 2️⃣b = 42
+        
+          #yourMacro()
+        
+          print(3️⃣a, 4️⃣b)
+        }
+        """,
+      references: [
+        "2️⃣": [
+          .lookForMacroExpansionNames,
+          .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
+        ],
+        "3️⃣": sameResult,
+        "4️⃣": sameResult,
+      ],
+      useNilAsTheParameter: true
+    )
+  }
+  
+  func testMacroSubstitution() {
+    let sameResult: [ResultExpectation] = [
+      .lookForMacroExpansionNames,
+      .fromScope(CodeBlockSyntax.self, expectedNames: ["2️⃣"]),
+      .lookForMacroExpansionNames,
+      .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
+    ]
+    
+    assertLexicalNameLookup(
+      source: """
+        func foo() {
+          let 1️⃣a = 42
+        
+          #myMacro()
+        
+          let 2️⃣b = 42
+        
+          #yourMacro()
+        
+          print(3️⃣a, 4️⃣b)
+        }
+        """,
+      references: [
+        "2️⃣": [
+          .lookForMacroExpansionNames,
+          .fromScope(CodeBlockSyntax.self, expectedNames: ["1️⃣"]),
+        ],
+        "3️⃣": sameResult,
+        "4️⃣": sameResult,
+      ],
+      useNilAsTheParameter: true
+    )
+  }
 
   func testDefaultIfConfigBehavior() {
     assertLexicalNameLookup(

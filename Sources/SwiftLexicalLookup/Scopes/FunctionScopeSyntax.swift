@@ -31,7 +31,8 @@ extension FunctionScopeSyntax {
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     var thisScopeResults: [LookupResult] = []
 
@@ -41,6 +42,7 @@ extension FunctionScopeSyntax {
         at: position,
         with: config,
         cache: cache,
+        macroExpansions: macroExpansions,
         propagateToParent: false
       )
     }
@@ -50,7 +52,8 @@ extension FunctionScopeSyntax {
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
   }
 }

@@ -19,7 +19,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult]
 }
 
@@ -44,20 +45,23 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     return defaultLookupImplementation(
       identifier,
       at: position,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       propagateToParent: false
     )
       + lookupThroughGenericParameterScope(
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
   }
 
@@ -81,12 +85,13 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if let genericParameterClause {
-      return genericParameterClause.lookup(identifier, at: lookUpPosition, with: config, cache: cache)
+      return genericParameterClause.lookup(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     } else {
-      return returningLookupFromGenericParameterScope(identifier, at: lookUpPosition, with: config, cache: cache)
+      return returningLookupFromGenericParameterScope(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     }
   }
 
@@ -94,8 +99,9 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
-    lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+    lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
   }
 }

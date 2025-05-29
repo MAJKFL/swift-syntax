@@ -22,6 +22,7 @@ protocol IntroducingToSequentialParentScopeSyntax: ScopeSyntax {
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult]
 }

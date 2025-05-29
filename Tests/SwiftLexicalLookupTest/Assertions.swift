@@ -165,3 +165,10 @@ private func testFunction(
     }
   }
 }
+
+func getTestMacroExpansions(tuples: (range: Range<AbsolutePosition>, source: String)...) {
+  for (range, source) in tuples {
+    var parser = Parser(source)
+    let sourceFileSyntax = SourceFileSyntax.parse(from: &parser)
+  }
+}

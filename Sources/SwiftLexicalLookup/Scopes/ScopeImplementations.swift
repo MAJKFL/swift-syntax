@@ -46,7 +46,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     return statements.flatMap { codeBlockItem in
       if let guardStmt = codeBlockItem.item.as(GuardStmtSyntax.self) {
@@ -54,7 +55,8 @@ import SwiftSyntax
           identifier,
           at: lookUpPosition,
           with: config,
-          cache: cache
+          cache: cache,
+          macroExpansions: macroExpansions
         )
       } else {
         return []
@@ -80,14 +82,16 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     sequentialLookup(
       in: statements,
       identifier,
       at: lookUpPosition,
       with: config,
-      cache: cache
+      cache: cache,
+      macroExpansions: macroExpansions
     )
   }
 }
@@ -109,12 +113,25 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if pattern.range.contains(lookUpPosition) || sequence.range.contains(lookUpPosition) {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     } else {
-      return defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache)
+      return defaultLookupImplementation(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
   }
 }
@@ -174,7 +191,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     let sequentialResults = sequentialLookup(
       in: statements,
@@ -182,6 +200,7 @@ import SwiftSyntax
       at: lookUpPosition,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       propagateToParent: false
     )
 
@@ -209,7 +228,7 @@ import SwiftSyntax
     }
 
     return sequentialResults + signatureResults
-      + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+    + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
   }
 }
 
@@ -290,12 +309,25 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if let elseBody, elseBody.range.contains(lookUpPosition) {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     } else {
-      return defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache)
+      return defaultLookupImplementation(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
   }
 }
@@ -316,7 +348,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     let filteredNames = members.flatMap { member in
       guard member.decl.kind == .associatedTypeDecl else { return [LookupName]() }
@@ -362,7 +395,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     guard !body.range.contains(lookUpPosition) else { return [] }
 
@@ -377,10 +411,17 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     // We're not using `lookupParent` to not cache the results here.
-    parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache) ?? []
+    parentScope?.lookup(
+      identifier,
+      at: lookUpPosition,
+      with: config,
+      cache: cache,
+      macroExpansions: macroExpansions
+    ) ?? []
   }
 }
 
@@ -427,7 +468,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if memberBlock.range.contains(lookUpPosition) {
       let implicitSelf: [LookupName] = [.implicit(.Self(DeclSyntax(self)))]
@@ -442,21 +484,40 @@ import SwiftSyntax
           at: lookUpPosition,
           with: config,
           cache: cache,
+          macroExpansions: macroExpansions,
           propagateToParent: false
         ) + [.lookForMembers(in: Syntax(self))]
-        + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     } else if !extendedType.range.contains(lookUpPosition), let genericWhereClause {
       if genericWhereClause.range.contains(lookUpPosition) {
         return [.lookForGenericParameters(of: self)] + [.lookForMembers(in: Syntax(self))]
-          + defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache)
+        + defaultLookupImplementation(
+          identifier,
+          at: lookUpPosition,
+          with: config,
+          cache: cache,
+          macroExpansions: macroExpansions
+        )
       }
 
       return [.lookForGenericParameters(of: self)]
-        + defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache)
+      + defaultLookupImplementation(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
 
     return [.lookForGenericParameters(of: self)]
-      + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+    + lookupInParent(
+      identifier,
+      at: lookUpPosition,
+      with: config,
+      cache: cache,
+      macroExpansions: macroExpansions
+    )
   }
 }
 
@@ -489,13 +550,14 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     guard let parentScope,
       let canInterleaveLaterScope = Syntax(parentScope).asProtocol(SyntaxProtocol.self)
         as? CanInterleaveResultsLaterScopeSyntax
     else {
-      return defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache)
+      return defaultLookupImplementation(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     }
 
     let implicitSelf: [LookupName] = [.implicit(.self(DeclSyntax(self)))]
@@ -508,6 +570,7 @@ import SwiftSyntax
       at: lookUpPosition,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       propagateToParent: false
     )
       + canInterleaveLaterScope.lookupWithInterleavedResults(
@@ -515,6 +578,7 @@ import SwiftSyntax
         at: lookUpPosition,
         with: config,
         cache: cache,
+        macroExpansions: macroExpansions,
         resultsToInterleave: implicitSelf.isEmpty ? [] : [.fromScope(Syntax(self), withNames: implicitSelf)]
       )
   }
@@ -567,21 +631,24 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if body.range.contains(lookUpPosition) || isLookupFromWhereClause(lookUpPosition) {
       return defaultLookupImplementation(
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
     } else {
       return lookupInParent(
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
     }
   }
@@ -653,7 +720,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     let filteredNamesFromLabel = namesFromLabel.filter { name in
       checkIdentifier(identifier, refersTo: name, at: lookUpPosition)
@@ -661,7 +729,13 @@ import SwiftSyntax
 
     if label.range.contains(lookUpPosition) && !isInWhereClause(lookUpPosition: lookUpPosition) {
       return config.finishInSequentialScope
-        ? [] : lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      ? [] : lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     } else if config.finishInSequentialScope {
       return sequentialLookup(
         in: statements,
@@ -669,6 +743,7 @@ import SwiftSyntax
         at: lookUpPosition,
         with: config,
         cache: cache,
+        macroExpansions: macroExpansions,
         propagateToParent: false
       )
     } else {
@@ -678,10 +753,17 @@ import SwiftSyntax
         at: lookUpPosition,
         with: config,
         cache: cache,
+        macroExpansions: macroExpansions,
         propagateToParent: false
       )
         + LookupResult.getResultArray(for: self, withNames: filteredNamesFromLabel)
-        + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      + lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
   }
 
@@ -736,7 +818,8 @@ import SwiftSyntax
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     var results: [LookupResult] = []
 
@@ -747,7 +830,8 @@ import SwiftSyntax
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
     }
 
@@ -765,8 +849,15 @@ import SwiftSyntax
         at: lookUpPosition,
         with: config,
         cache: cache,
+        macroExpansions: macroExpansions,
         propagateToParent: false
-      ) + lookInMembers + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      ) + lookInMembers + lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
   }
 }
 
@@ -832,13 +923,15 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     lookupWithInterleavedResults(
       identifier,
       at: lookUpPosition,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       resultsToInterleave: []
     )
   }
@@ -867,6 +960,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
     cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?,
     resultsToInterleave: [LookupResult]
   ) -> [LookupResult] {
     var thisScopeResults: [LookupResult] = []
@@ -877,6 +971,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
         at: position,
         with: config,
         cache: cache,
+        macroExpansions: macroExpansions,
         propagateToParent: false
       )
     }
@@ -886,7 +981,8 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
   }
 }
@@ -916,13 +1012,27 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     switch accessors {
     case .getter(let codeBlockItems):
-      return sequentialLookup(in: codeBlockItems, identifier, at: lookUpPosition, with: config, cache: cache)
+      return sequentialLookup(
+        in: codeBlockItems,
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     case .accessors:
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
   }
 
@@ -933,13 +1043,20 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
     cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?,
     resultsToInterleave: [LookupResult]
   ) -> [LookupResult] {
     guard let parentScope,
       let canInterleaveLaterScope = Syntax(parentScope).asProtocol(SyntaxProtocol.self)
         as? CanInterleaveResultsLaterScopeSyntax
     else {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
 
     return canInterleaveLaterScope.lookupWithInterleavedResults(
@@ -947,6 +1064,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
       at: lookUpPosition,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       resultsToInterleave: resultsToInterleave
     )
   }
@@ -982,7 +1100,8 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if (bindings.first?.accessorBlock?.range.contains(lookUpPosition) ?? false)
       || shouldIntroduceSelfIfLazy(lookUpPosition: lookUpPosition)
@@ -992,11 +1111,18 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
     } else {
       // We're not using `lookupParent` to not cache the results here.
-      return parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache) ?? []
+      return parentScope?.lookup(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      ) ?? []
     }
   }
 
@@ -1007,13 +1133,26 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
     cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?,
     resultsToInterleave: [LookupResult]
   ) -> [LookupResult] {
     guard isMember else {
-      return lookup(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookup(
+        identifier,
+        at: lookUpPosition,
+        with: config,
+        cache: cache,
+        macroExpansions: macroExpansions
+      )
     }
 
-    return resultsToInterleave + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+    return resultsToInterleave + lookupInParent(
+      identifier,
+      at: lookUpPosition,
+      with: config,
+      cache: cache,
+      macroExpansions: macroExpansions
+    )
   }
 
   /// Returns `true`, if `lookUpPosition` is in initializer of
@@ -1054,7 +1193,8 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     let clause: IfConfigClauseSyntax?
 
@@ -1074,6 +1214,7 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
       at: lookUpPosition,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       ignoreNamedDecl: true,
       propagateToParent: false
     )
@@ -1121,9 +1262,16 @@ extension SubscriptDeclSyntax: WithGenericParametersScopeSyntax, CanInterleaveRe
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     // We're not using `lookupParent` to not cache the results here.
-    parentScope?.lookup(identifier, at: lookUpPosition, with: config, cache: cache) ?? []
+    parentScope?.lookup(
+      identifier,
+      at: lookUpPosition,
+      with: config,
+      cache: cache,
+      macroExpansions: macroExpansions
+    ) ?? []
   }
 }

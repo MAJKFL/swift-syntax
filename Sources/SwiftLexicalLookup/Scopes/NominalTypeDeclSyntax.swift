@@ -35,17 +35,18 @@ extension NominalTypeDeclSyntax {
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     if let inheritanceClause, inheritanceClause.range.contains(lookUpPosition) {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     } else if let genericParameterClause, genericParameterClause.range.contains(lookUpPosition) {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     } else if name.range.contains(lookUpPosition) || genericWhereClause?.range.contains(lookUpPosition) ?? false {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     } else {
       return [.lookForMembers(in: Syntax(self))]
-        + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      + lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     }
   }
 }

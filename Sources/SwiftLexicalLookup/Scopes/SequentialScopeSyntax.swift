@@ -44,6 +44,7 @@ extension SequentialScopeSyntax {
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
     cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?,
     ignoreNamedDecl: Bool = false,
     propagateToParent: Bool = true
   ) -> [LookupResult] {
@@ -66,7 +67,15 @@ extension SequentialScopeSyntax {
     if let cachedResults = cache?.getCachedSequentialResults(id: id) {
       results = cachedResults
     } else {
+      var previousPos = self.endPositionBeforeTrailingTrivia
+      
       for codeBlockItem in codeBlockItems.reversed() {
+        if let macroExpansion = macroExpansions?.getMacro(between: previousPos...codeBlockItem.endPositionBeforeTrailingTrivia) {
+          // We've found a macro expansion!
+          // TODO: Perform lookup in the macro source file and add new result here
+        }
+        previousPos = codeBlockItem.positionAfterSkippingLeadingTrivia
+        
         if let namedDecl = codeBlockItem.item.asProtocol(NamedDeclSyntax.self) {
           guard !ignoreNamedDecl else { continue }
 
@@ -86,7 +95,8 @@ extension SequentialScopeSyntax {
             cache == nil ? identifier : nil,
             at: cache == nil ? lookUpPosition : endPosition,
             with: config,
-            cache: cache
+            cache: cache,
+            macroExpansions: macroExpansions
           )
 
           // Skip, if no results were found.
@@ -99,6 +109,14 @@ extension SequentialScopeSyntax {
           }
 
           results += introducedResults
+        } else if let macroExpansionSyntax = codeBlockItem.item.as(MacroExpansionExprSyntax.self) {
+          // If there are some names collected, create a new result for this scope.
+          if !currentChunk.isEmpty {
+            results.append(.fromScope(Syntax(self), withNames: currentChunk))
+            currentChunk = []
+          }
+          
+          results.append(.lookForMacroExpansionNames(scope: Syntax(self), macroExpansion: macroExpansionSyntax))
         } else {
           // Extract new names from encountered node.
           currentChunk += LookupName.getNames(
@@ -112,6 +130,11 @@ extension SequentialScopeSyntax {
       if !currentChunk.isEmpty {
         results.append(.fromScope(Syntax(self), withNames: currentChunk))
         currentChunk = []
+      }
+      
+      if let macroExpansion = macroExpansions?.getMacro(between: previousPos...self.positionAfterSkippingLeadingTrivia) {
+        // We've found a macro expansion at the start of the body!
+        // TODO: Perform lookup in the macro source file and add new result here
       }
 
       // Filter named decls to be appended to the results.
@@ -145,6 +168,12 @@ extension SequentialScopeSyntax {
             scope,
             withNames: filteredNames
           )
+        } else if case .lookForMacroExpansionNames(let scope, let macroExpansion) = result {
+          if macroExpansion.endPositionBeforeTrailingTrivia <= lookUpPosition {
+            return .lookForMacroExpansionNames(scope: scope, macroExpansion: macroExpansion)
+          } else {
+            return nil
+          }
         } else {
           return result
         }
@@ -152,6 +181,6 @@ extension SequentialScopeSyntax {
 
     return results
       + (config.finishInSequentialScope || !propagateToParent
-        ? [] : lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache))
+         ? [] : lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions))
   }
 }

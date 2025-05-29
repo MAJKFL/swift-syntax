@@ -21,6 +21,7 @@ protocol CanInterleaveResultsLaterScopeSyntax: ScopeSyntax {
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
     cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?,
     resultsToInterleave: [LookupResult]
   ) -> [LookupResult]
 }

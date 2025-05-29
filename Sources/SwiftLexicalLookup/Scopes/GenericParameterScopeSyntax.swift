@@ -41,20 +41,23 @@ protocol GenericParameterScopeSyntax: ScopeSyntax {}
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     return defaultLookupImplementation(
       identifier,
       at: lookUpPosition,
       with: config,
       cache: cache,
+      macroExpansions: macroExpansions,
       propagateToParent: false
     )
       + lookupBypassingParentResults(
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
   }
 
@@ -80,7 +83,8 @@ protocol GenericParameterScopeSyntax: ScopeSyntax {}
     _ identifier: Identifier?,
     at lookUpPosition: AbsolutePosition,
     with config: LookupConfig,
-    cache: LookupCache?
+    cache: LookupCache?,
+    macroExpansions: LookupMacroExpansions?
   ) -> [LookupResult] {
     guard let parentScope else { return [] }
 
@@ -91,10 +95,11 @@ protocol GenericParameterScopeSyntax: ScopeSyntax {}
         identifier,
         at: lookUpPosition,
         with: config,
-        cache: cache
+        cache: cache,
+        macroExpansions: macroExpansions
       )
     } else {
-      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache)
+      return lookupInParent(identifier, at: lookUpPosition, with: config, cache: cache, macroExpansions: macroExpansions)
     }
   }
 }
